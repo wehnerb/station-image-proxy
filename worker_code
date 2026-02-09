@@ -4,61 +4,117 @@ export default {
       const url = new URL(request.url);
       const imgKey = url.searchParams.get("img");
 
-      if (!imgKey) return new Response("Missing img parameter", { status: 400 });
+      if (!imgKey) {
+        return new Response("Missing img parameter", { status: 400 });
+      }
 
+      // ==============================
       // Layout sizes
+      // ==============================
       const LAYOUT_SIZES = {
         "1-column": { width: 1735, height: 720 }, // NOAA gauge
         "2-column": { width: 852, height: 720 }   // Traffic cams
       };
 
+      // ==============================
       // Refresh intervals (seconds)
+      // ==============================
       const REFRESH_TIMES = {
-        noaa: 1200,    // 20 minutes
-        traffic: 300   // 5 minutes
+        noaa: 1200,     // 20 minutes
+        traffic: 300    // 5 minutes
       };
 
-      // Image configuration
+      // ==============================
+      // Image definitions
+      // ==============================
       const IMAGES = {
-        noaa: { src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png", layout: "1-column" },
-        "cam-west": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg", layout: "2-column" },
-        "cam-east": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg", layout: "2-column" },
-        "cam-north": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg", layout: "2-column" },
-        "cam-south": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg", layout: "2-column" },
-        "cam-redriver-east": { src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg", layout: "2-column" },
-        "cam-redriver-west": { src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg", layout: "2-column" }
+        noaa: {
+          src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
+          layout: "1-column",
+          refreshKey: "noaa"
+        },
+        "cam-west": {
+          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg",
+          layout: "2-column",
+          refreshKey: "traffic"
+        },
+        "cam-east": {
+          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg",
+          layout: "2-column",
+          refreshKey: "traffic"
+        },
+        "cam-north": {
+          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg",
+          layout: "2-column",
+          refreshKey: "traffic"
+        },
+        "cam-south": {
+          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg",
+          layout: "2-column",
+          refreshKey: "traffic"
+        },
+        "cam-redriver-east": {
+          src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
+          layout: "2-column",
+          refreshKey: "traffic"
+        },
+        "cam-redriver-west": {
+          src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg",
+          layout: "2-column",
+          refreshKey: "traffic"
+        }
       };
 
       const cfg = IMAGES[imgKey];
-      if (!cfg) return new Response("Invalid image key", { status: 404 });
+      if (!cfg) {
+        return new Response("Invalid image key", { status: 404 });
+      }
 
       const { width, height } = LAYOUT_SIZES[cfg.layout];
+      const cacheTTL = REFRESH_TIMES[cfg.refreshKey];
 
-      // Weserv URL with resizing, padding, transparency
-      const weservURL = `https://images.weserv.nl/?url=${encodeURIComponent(cfg.src)}&w=${width}&h=${height}&fit=contain&bg=transparent`;
+      // ==============================
+      // Weserv resize URL
+      // ==============================
+      const weservURL =
+        `https://images.weserv.nl/?` +
+        `url=${encodeURIComponent(cfg.src)}` +
+        `&w=${width}` +
+        `&h=${height}` +
+        `&fit=contain` +
+        `&bg=transparent`;
 
-      const res = await fetch(weservURL);
-      if (!res.ok) throw new Error("Failed to fetch image from Weserv");
+      try {
+        const res = await fetch(weservURL);
 
-      return new Response(res.body, {
-        headers: {
-          "Content-Type": res.headers.get("Content-Type") || "image/png",
-          "Cache-Control": `public, max-age=${cfg.layout === "1-column" ? REFRESH_TIMES.noaa : REFRESH_TIMES.traffic}`
+        if (!res.ok) {
+          throw new Error("Weserv fetch failed");
         }
-      });
 
-    } catch (err) {
-      return fallbackImage();
+        return new Response(res.body, {
+          headers: {
+            "Content-Type": res.headers.get("Content-Type") || "image/png",
+            "Cache-Control": `public, max-age=${cacheTTL}`
+          }
+        });
+      } catch {
+        return fallbackImage(width, height);
+      }
+
+    } catch {
+      return new Response("Unexpected error", { status: 500 });
     }
   }
 };
 
-// Fallback image with heading + subheading
+// ==============================
+// Fallback SVG image
+// ==============================
 function fallbackImage(width = 852, height = 720) {
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <rect width="100%" height="100%" fill="#000000"/>
-  <text x="50%" y="40%"
+  <text x="50%" y="42%"
         dominant-baseline="middle"
         text-anchor="middle"
         font-family="Arial, Helvetica, sans-serif"
@@ -66,7 +122,7 @@ function fallbackImage(width = 852, height = 720) {
         fill="#FFFFFF">
     Service temporarily unavailable
   </text>
-  <text x="50%" y="60%"
+  <text x="50%" y="58%"
         dominant-baseline="middle"
         text-anchor="middle"
         font-family="Arial, Helvetica, sans-serif"
@@ -78,6 +134,9 @@ function fallbackImage(width = 852, height = 720) {
 
   return new Response(svg, {
     status: 503,
-    headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" }
+    headers: {
+      "Content-Type": "image/svg+xml",
+      "Cache-Control": "no-store"
+    }
   });
 }
