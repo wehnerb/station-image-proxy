@@ -1,142 +1,62 @@
+/**
+ * FIRE STATION DISPLAY PROXY - VERSION 1.5
+ * * NOTE: If images ever get "stuck" again, simply change the 
+ * 'CACHE_VERSION' number below (e.g., change 1 to 2).
+ */
+const CACHE_VERSION = 1; 
+
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const imgKey = url.searchParams.get("img");
+
+    if (!imgKey) return new Response("Missing img parameter", { status: 400 });
+
+    const REFRESH_TIMES = {
+      noaa: 1200,    // 20 minutes
+      traffic: 300   // 5 minutes
+    };
+
+    const IMAGES = {
+      noaa: { src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png", w: 1735, h: 720, type: 'noaa' },
+      "cam-west": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg", w: 852, h: 720, type: 'traffic' },
+      "cam-east": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg", w: 852, h: 720, type: 'traffic' },
+      "cam-north": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg", w: 852, h: 720, type: 'traffic' },
+      "cam-south": { src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg", w: 852, h: 720, type: 'traffic' },
+      "cam-redriver-east": { src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg", w: 852, h: 720, type: 'traffic' },
+      "cam-redriver-west": { src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg", w: 852, h: 720, type: 'traffic' }
+    };
+
+    const cfg = IMAGES[imgKey];
+    if (!cfg) return new Response("Invalid key", { status: 404 });
+
+    const ttl = REFRESH_TIMES[cfg.type];
+
+    /**
+     * DYNAMIC CACHE BUSTING
+     * bucket: Changes every 5 or 20 minutes automatically.
+     * CACHE_VERSION: Manually changes whenever you edit this code.
+     */
+    const bucket = Math.floor(Date.now() / 1000 / ttl);
+    const weservURL = `https://images.weserv.nl/?url=${encodeURIComponent(cfg.src)}&w=${cfg.w}&h=${cfg.h}&fit=contain&bg=transparent&v=${CACHE_VERSION}&time=${bucket}`;
+
     try {
-      const url = new URL(request.url);
-      const imgKey = url.searchParams.get("img");
+      const res = await fetch(weservURL, {
+        headers: { "User-Agent": "FireStationDisplay/1.5" },
+        // On workers.dev, we use standard fetch caching
+      });
 
-      if (!imgKey) {
-        return new Response("Missing img parameter", { status: 400 });
-      }
+      if (!res.ok) throw new Error();
 
-      // ==============================
-      // Layout sizes
-      // ==============================
-      const LAYOUT_SIZES = {
-        "1-column": { width: 1735, height: 720 }, // NOAA gauge
-        "2-column": { width: 852, height: 720 }   // Traffic cams
-      };
-
-      // ==============================
-      // Refresh intervals (seconds)
-      // ==============================
-      const REFRESH_TIMES = {
-        noaa: 1200,     // 20 minutes
-        traffic: 300    // 5 minutes
-      };
-
-      // ==============================
-      // Image definitions
-      // ==============================
-      const IMAGES = {
-        noaa: {
-          src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
-          layout: "1-column",
-          refreshKey: "noaa"
-        },
-        "cam-west": {
-          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg",
-          layout: "2-column",
-          refreshKey: "traffic"
-        },
-        "cam-east": {
-          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg",
-          layout: "2-column",
-          refreshKey: "traffic"
-        },
-        "cam-north": {
-          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg",
-          layout: "2-column",
-          refreshKey: "traffic"
-        },
-        "cam-south": {
-          src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg",
-          layout: "2-column",
-          refreshKey: "traffic"
-        },
-        "cam-redriver-east": {
-          src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
-          layout: "2-column",
-          refreshKey: "traffic"
-        },
-        "cam-redriver-west": {
-          src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg",
-          layout: "2-column",
-          refreshKey: "traffic"
+      return new Response(res.body, {
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": `public, max-age=${ttl}, must-revalidate`,
+          "X-Refresh-Version": CACHE_VERSION.toString()
         }
-      };
-
-      const cfg = IMAGES[imgKey];
-      if (!cfg) {
-        return new Response("Invalid image key", { status: 404 });
-      }
-
-      const { width, height } = LAYOUT_SIZES[cfg.layout];
-      const cacheTTL = REFRESH_TIMES[cfg.refreshKey];
-
-      // ==============================
-      // Weserv resize URL
-      // ==============================
-      const weservURL =
-        `https://images.weserv.nl/?` +
-        `url=${encodeURIComponent(cfg.src)}` +
-        `&w=${width}` +
-        `&h=${height}` +
-        `&fit=contain` +
-        `&bg=transparent`;
-
-      try {
-        const res = await fetch(weservURL);
-
-        if (!res.ok) {
-          throw new Error("Weserv fetch failed");
-        }
-
-        return new Response(res.body, {
-          headers: {
-            "Content-Type": res.headers.get("Content-Type") || "image/png",
-            "Cache-Control": `public, max-age=${cacheTTL}`
-          }
-        });
-      } catch {
-        return fallbackImage(width, height);
-      }
-
-    } catch {
-      return new Response("Unexpected error", { status: 500 });
+      });
+    } catch (err) {
+      return new Response("Error loading image", { status: 503 });
     }
   }
 };
-
-// ==============================
-// Fallback SVG image
-// ==============================
-function fallbackImage(width = 852, height = 720) {
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <rect width="100%" height="100%" fill="#000000"/>
-  <text x="50%" y="42%"
-        dominant-baseline="middle"
-        text-anchor="middle"
-        font-family="Arial, Helvetica, sans-serif"
-        font-size="36"
-        fill="#FFFFFF">
-    Service temporarily unavailable
-  </text>
-  <text x="50%" y="58%"
-        dominant-baseline="middle"
-        text-anchor="middle"
-        font-family="Arial, Helvetica, sans-serif"
-        font-size="24"
-        fill="#FFFFFF">
-    The image will return as soon as the service is available again
-  </text>
-</svg>`;
-
-  return new Response(svg, {
-    status: 503,
-    headers: {
-      "Content-Type": "image/svg+xml",
-      "Cache-Control": "no-store"
-    }
-  });
-}
