@@ -14,8 +14,8 @@ export default {
 
       // Refresh intervals (seconds)
       const REFRESH_TIMES = {
-        noaa: 3600,    // 1 hour
-        traffic: 600   // 10 minutes
+        noaa: 1200,    // 20 minutes
+        traffic: 300   // 5 minutes
       };
 
       // Image configuration
