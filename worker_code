@@ -1,13 +1,9 @@
-/**
- * STATION IMAGE PROXY - v1.9.3
- * Fixed: Removed Markdown link syntax from source strings
- */
-
 const CACHE_VERSION = 1; 
 
 // Global Layout Constants
 const LAYOUT_1_COL = { w: 1735, h: 720 }; // Wide
 const LAYOUT_2_COL = { w: 852, h: 720 };  // Split
+const LAYOUT_3_COL = { w: 500, h: 720 }; // Tri
 
 export default {
   async fetch(request, env, ctx) {
@@ -17,8 +13,9 @@ export default {
     if (!imgKey) return new Response("Error: Missing img parameter", { status: 400 });
 
     const REFRESH_TIMES = {
-      '1-column': 1200, // 20 Minutes
-      '2-column': 300   // 5 Minutes
+      'slow-refresh': 3600,      // 60 Minutes
+      'moderate-refresh': 1200,   // 20 minutes
+      'fast-refresh': 300            // 5 Minutes
     };
 
     const IMAGES = {
@@ -33,32 +30,37 @@ export default {
       "cam-i29i94-west": { 
         src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg", 
         layout: LAYOUT_2_COL, 
-        type: '2-column' 
+        type: 'moderate-refresh' 
       },
       "cam-i29i94-east": { 
         src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg", 
         layout: LAYOUT_2_COL, 
-        type: '2-column' 
+        type: 'fast-refresh' 
       },
       "cam-i29i94-north": { 
         src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg", 
         layout: LAYOUT_2_COL, 
-        type: '2-column' 
+        type: 'fast-refresh' 
       },
       "cam-i29i94-south": { 
         src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg", 
         layout: LAYOUT_2_COL, 
-        type: '2-column' 
+        type: 'fast-refresh' 
       },
       "cam-i94redriver-east": { 
         src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg", 
         layout: LAYOUT_2_COL, 
-        type: '2-column' 
+        type: 'fast-refresh' 
       },
       "cam-i94redriver-west": { 
         src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg", 
         layout: LAYOUT_2_COL, 
-        type: '2-column' 
+        type: 'fast-refresh' 
+      },
+      "cam-i2952ndAveS-west": {
+        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBWest.jpg",
+        layout: LAYOUT_3_COL,
+        type: 'fast-refresh'
       }
     };
 
