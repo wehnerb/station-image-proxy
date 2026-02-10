@@ -24,7 +24,7 @@ export default {
     const IMAGES = {
       // River Levels (NOAA)
       "redriverlevel": { 
-        src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg_brokenlink.png", 
+        src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png", 
         layout: LAYOUT_1_COL, 
         type: '1-column' 
       },
@@ -36,7 +36,7 @@ export default {
         type: '2-column' 
       },
       "cam-i29i94-east": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast_brokenlink.jpg", 
+        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg", 
         layout: LAYOUT_2_COL, 
         type: '2-column' 
       },
