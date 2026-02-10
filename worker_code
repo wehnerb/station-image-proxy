@@ -24,7 +24,7 @@ export default {
     const IMAGES = {
       // River Levels (NOAA)
       "redriverlevel": { 
-        src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png", 
+        src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg_brokenlink.png", 
         layout: LAYOUT_1_COL, 
         type: '1-column' 
       },
@@ -36,7 +36,7 @@ export default {
         type: '2-column' 
       },
       "cam-i29i94-east": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg", 
+        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast_brokenlink.jpg", 
         layout: LAYOUT_2_COL, 
         type: '2-column' 
       },
@@ -98,7 +98,7 @@ function generateFallback(width, height) {
       IMAGE UNAVAILABLE
     </text>
     <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#bdc3c7">
-      Check source provider or retry shortly.
+      The image should return shortly
     </text>
   </svg>`;
   
