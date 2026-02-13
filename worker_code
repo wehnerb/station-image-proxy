@@ -1,111 +1,531 @@
-const CACHE_VERSION = 1; 
+const CACHE_VERSION = 1;
 
 // Global Layout Constants
 const LAYOUT_1_COL = { w: 1735, h: 720 }; // Wide
 const LAYOUT_2_COL = { w: 852, h: 720 };  // Split
-const LAYOUT_3_COL = { w: 500, h: 720 }; // Tri
+const LAYOUT_3_COL = { w: 558, h: 720 }; // Tri
 
 export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const imgKey = url.searchParams.get("img");
+      async fetch(request, env, ctx) {
+            const url = new URL(request.url);
+            const imgKey = url.searchParams.get("img");
 
-    if (!imgKey) return new Response("Error: Missing img parameter", { status: 400 });
+            if (!imgKey) return new Response("Error: Missing img parameter", { status: 400 });
 
-    const REFRESH_TIMES = {
-      'slow-refresh': 3600,      // 60 Minutes
-      'moderate-refresh': 1200,   // 20 minutes
-      'fast-refresh': 300            // 5 Minutes
-    };
+            const REFRESH_TIMES = {
+                  'slow-refresh': 3600,      // 60 Minutes
+                  'moderate-refresh': 1200,   // 20 minutes
+                  'fast-refresh': 300            // 5 Minutes
+            };
 
-    const IMAGES = {
-      // River Levels (NOAA)
-      "redriverlevel": { 
-        src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png", 
-        layout: LAYOUT_1_COL, 
-        type: '1-column' 
-      },
+            const IMAGES = {
+                  // River Levels (NOAA)
+                  "redriverlevel-1": {
+                        src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
+                        layout: LAYOUT_1_COL,
+                        type: 'moderate-refresh'
+                  },
 
-      // DOT Cameras (NDDOT)
-      "cam-i29i94-west": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg", 
-        layout: LAYOUT_2_COL, 
-        type: 'moderate-refresh' 
-      },
-      "cam-i29i94-east": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg", 
-        layout: LAYOUT_2_COL, 
-        type: 'fast-refresh' 
-      },
-      "cam-i29i94-north": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg", 
-        layout: LAYOUT_2_COL, 
-        type: 'fast-refresh' 
-      },
-      "cam-i29i94-south": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg", 
-        layout: LAYOUT_2_COL, 
-        type: 'fast-refresh' 
-      },
-      "cam-i94redriver-east": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg", 
-        layout: LAYOUT_2_COL, 
-        type: 'fast-refresh' 
-      },
-      "cam-i94redriver-west": { 
-        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg", 
-        layout: LAYOUT_2_COL, 
-        type: 'fast-refresh' 
-      },
-      "cam-i2952ndAveS-west": {
-        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBWest.jpg",
-        layout: LAYOUT_3_COL,
-        type: 'fast-refresh'
+                  "redriverlevel-2": {
+                        src: "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
+                        layout: LAYOUT_2_COL,
+                        type: 'moderate-refresh'
+                  },
+
+                  // DOT Cameras (NDDOT)
+                  "cam-i29i94-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'moderate-refresh'
+                  },
+                   "cam-i29i94-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'moderate-refresh'
+                  }, "cam-i29i94-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'moderate-refresh'
+                  },
+                  "cam-i29i94-east-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29i94-east-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },"cam-i29i94-east-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29i94-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29i94-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29i94-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29i94-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29i94-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29i94-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94VeteransBlvd-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94VeteransBlvd-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94VeteransBlvd-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStWest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStWest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStWest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-east-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStEast.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-east-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStEast.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9445thStS-east-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStEast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9442ndStS-east-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP349.145Fargo42ndStSWBEast.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9442ndStS-east-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP349.145Fargo42ndStSWBEast.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9442ndStS-east-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP349.145Fargo42ndStSWBEast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9442ndStS-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP349.145Fargo42ndStSWBWest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9442ndStS-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP349.145Fargo42ndStSWBWest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9442ndStS-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP349.145Fargo42ndStSWBWest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9425thStS-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP350.603Fargo25thStWest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9425thStS-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP350.603Fargo25thStWest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9425thStS-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP350.603Fargo25thStWest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9425thStS-east-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP350.611Fargo25thStEast.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9425thStS-east-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP350.611Fargo25thStEast.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i9425thStS-east-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP350.611Fargo25thStEast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94UniversityDrS-east-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrEast.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94UniversityDrS-east-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrEast.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94UniversityDrS-east-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrEast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94UniversityDrS-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrWest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94UniversityDrS-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrWest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94UniversityDrS-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrWest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                   "cam-i94redriver-east-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94redriver-east-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94redriver-east-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94redriver-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94redriver-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i94redriver-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                   "cam-i2952ndAveS-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBWest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBWest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBWest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-east-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBEast.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-east-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBEast.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-east-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBEast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2940thAveS-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP61.408Fargo40thAveNorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2940thAveS-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP61.408Fargo40thAveNorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2940thAveS-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP61.408Fargo40thAveNorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2940thAveS-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP61.408Fargo40thAveSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2940thAveS-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP61.408Fargo40thAveSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2940thAveS-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP61.408Fargo40thAveSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampNorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampNorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampNorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-west-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampWest.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-west-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampWest.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2932ndAveS-west-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP62.627Fargo32ndAveSEastRampWest.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2913thAveS-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP64.725FargoNorthof9thAveNorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2913thAveS-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP64.725FargoNorthof9thAveNorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2913thAveS-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP64.725FargoNorthof9thAveNorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2913thAveS-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP64.135Fargo13thAveSSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2913thAveS-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP64.135Fargo13thAveSSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2913thAveS-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP64.135Fargo13thAveSSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29MainAve-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.272FargoMainAveSBSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29MainAve-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.272FargoMainAveSBSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29MainAve-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.272FargoMainAveSBSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29MainAve-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.272FargoMainAveSBNorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29MainAve-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.272FargoMainAveSBNorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i29MainAve-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.272FargoMainAveSBNorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i297thAveN-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.741Fargo7thAveNSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i297thAveN-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.741Fargo7thAveNSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i297thAveN-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP65.741Fargo7thAveNSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2919thAveN-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2919thAveN-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2919thAveN-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2919thAveN-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNNorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2919thAveN-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNNorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2919thAveN-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNNorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  }
+            };
+      
+
+            const cfg = IMAGES[imgKey];
+            if (!cfg) return new Response("Error: Invalid image key", { status: 404 });
+
+            const ttl = REFRESH_TIMES[cfg.type];
+            const bucket = Math.floor(Date.now() / 1000 / ttl);
+
+            const weservURL = `https://images.weserv.nl/?url=${encodeURIComponent(cfg.src)}&w=${cfg.layout.w}&h=${cfg.layout.h}&fit=contain&bg=transparent&v=${CACHE_VERSION}&time=${bucket}`;
+
+            try {
+                  const res = await fetch(weservURL, {
+                        headers: { "User-Agent": "FireStationDisplay/1.9" }
+                  });
+
+                  if (!res.ok) throw new Error("Source Down");
+
+                  return new Response(res.body, {
+                        headers: {
+                              "Content-Type": "image/png",
+                              "Cache-Control": `public, max-age=${ttl}, must-revalidate`,
+                              "X-System-Version": CACHE_VERSION.toString()
+                        }
+                  });
+
+            } catch (err) {
+                  return generateFallback(cfg.layout.w, cfg.layout.h);
+            }
       }
-    };
-
-    const cfg = IMAGES[imgKey];
-    if (!cfg) return new Response("Error: Invalid image key", { status: 404 });
-
-    const ttl = REFRESH_TIMES[cfg.type];
-    const bucket = Math.floor(Date.now() / 1000 / ttl);
-    
-    const weservURL = `https://images.weserv.nl/?url=${encodeURIComponent(cfg.src)}&w=${cfg.layout.w}&h=${cfg.layout.h}&fit=contain&bg=transparent&v=${CACHE_VERSION}&time=${bucket}`;
-
-    try {
-      const res = await fetch(weservURL, {
-        headers: { "User-Agent": "FireStationDisplay/1.9" }
-      });
-
-      if (!res.ok) throw new Error("Source Down");
-
-      return new Response(res.body, {
-        headers: {
-          "Content-Type": "image/png",
-          "Cache-Control": `public, max-age=${ttl}, must-revalidate`,
-          "X-System-Version": CACHE_VERSION.toString()
-        }
-      });
-
-    } catch (err) {
-      return generateFallback(cfg.layout.w, cfg.layout.h);
-    }
-  }
 };
 
 function generateFallback(width, height) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-    <rect width="100%" height="100%" fill="#111111"/>
-    <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="48" fill="#e74c3c">
-      IMAGE UNAVAILABLE
-    </text>
-    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="32" fill="#bdc3c7">
-      The image should return shortly
-    </text>
-  </svg>`;
-  
-  return new Response(svg, {
-    status: 503,
-    headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" }
-  });
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <rect width="100%" height="100%" fill="#111111"/>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="48" fill="#e74c3c">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            IMAGE UNAVAILABLE
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </text>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="32" fill="#bdc3c7">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          The image should return shortly
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </text>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </svg>`;
+
+      return new Response(svg, {
+            status: 503,
+            headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" }
+      });
 }
