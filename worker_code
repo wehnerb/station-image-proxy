@@ -91,16 +91,12 @@ export default {
     const keys = imgParam.split('+');
     const isStacked = keys.length > 1;
 
-  // --- STACKED LOGIC ---
+    // --- STACKED LOGIC ---
     if (isStacked) {
-      // FIX: Use index [cite_start]and [1] to get the specific keys from the array
-      const src1 = MAPPING[keys]; 
-      [cite_start]const src2 = MAPPING[keys[1]];
+      const src1 = MAPPING[keys];
+      const src2 = MAPPING[keys];
 
       if (!src1 || !src2) return generateFallback(layout.w, layout.h, "CAMERA KEY NOT FOUND");
-
-    }
-
 
       const imageWidth = layout.w;
       const imageHeight = (720 - STACK_GAP) / 2;
@@ -127,7 +123,7 @@ export default {
     }
 
     // --- SINGLE IMAGE LOGIC ---
-    const src = MAPPING[keys]; 
+    const src = MAPPING[keys];
     if (!src) return generateFallback(layout.w, layout.h, "CAMERA KEY NOT FOUND");
 
     const weservURL = `https://images.weserv.nl/?url=${encodeURIComponent(src)}&w=${layout.w}&h=${layout.h}&fit=contain&bg=transparent&v=${CACHE_VERSION}&time=${bucket}`;
