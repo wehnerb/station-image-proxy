@@ -27,6 +27,7 @@ const MAPPING = {
   
   // ND DOT Cameras
 
+  // I-94
   "i94VeteransBlvd-south": "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBSouth.jpg",
   "i94VeteransBlvd-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP347.565Fargo9thStEEBEast.jpg",
   "i9445thStS-south": "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStSouth.jpg",
@@ -43,6 +44,8 @@ const MAPPING = {
   "i94UniversityDrS-west": "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrWest.jpg",
   "i94RedRiver-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
   "i94RedRiver-west": "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg",
+
+  // I-29
   "i2970thAveS-north": "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSNorth.jpg",
   "i2970thAveS-south": "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSSouth.jpg",
   "i2952ndAveS-north": "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBNorth.jpg",
