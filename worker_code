@@ -20,7 +20,13 @@ const REFRESH_TIMES = {
 
 // --- IMAGE MAPPING ---
 const MAPPING = {
-  "redriverlevel": "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
+
+  // NOAA River Gauges
+
+  "riverlevel-redriver": "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
+  
+  // ND DOT Cameras
+
   "i94VeteransBlvd-south": "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBSouth.jpg",
   "i94VeteransBlvd-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP347.565Fargo9thStEEBEast.jpg",
   "i9445thStS-south": "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStSouth.jpg",
