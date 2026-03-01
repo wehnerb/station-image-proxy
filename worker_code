@@ -40,6 +40,7 @@ const MAPPING = {
   "i94i29-east": "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg",
   "i94i29-west": "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg",
   "i9425thStS-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP350.611Fargo25thStEast.jpg",
+  "i9425thStS-west": "https://www.dot.nd.gov/travel-info/cameras/I94RP350.603Fargo25thStWest.jpg?ts=1772402365914",
   "i94UniversityDrS-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrEast.jpg",
   "i94UniversityDrS-west": "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrWest.jpg",
   "i94RedRiver-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
