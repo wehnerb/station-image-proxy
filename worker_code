@@ -272,6 +272,36 @@ export default {
                         layout: LAYOUT_3_COL,
                         type: 'fast-refresh'
                   },
+                   "cam-i2970thAveS-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSNorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                   "cam-i2970thAveS-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSNorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                   "cam-i2970thAveS-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSNorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                   "cam-i2970thAveS-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                   "cam-i2970thAveS-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                   "cam-i2970thAveS-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSSouth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
                   "cam-i2952ndAveS-west-1": {
                         src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBWest.jpg",
                         layout: LAYOUT_1_COL,
@@ -299,6 +329,38 @@ export default {
                   },
                   "cam-i2952ndAveS-east-3": {
                         src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBEast.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-north-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBNorth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-north-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBNorth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-north-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBNorth.jpg",
+                        layout: LAYOUT_3_COL,
+                        type: 'fast-refresh'
+                  },
+                  "cam-i2952ndAveS-south-1": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBSouth.jpg",
+                        layout: LAYOUT_1_COL,
+                        type: 'fast-refresh'
+                  },
+
+                  "cam-i2952ndAveS-south-2": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBSouth.jpg",
+                        layout: LAYOUT_2_COL,
+                        type: 'fast-refresh'
+                  },
+
+                  "cam-i2952ndAveS-south-3": {
+                        src: "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBSouth.jpg",
                         layout: LAYOUT_3_COL,
                         type: 'fast-refresh'
                   },
