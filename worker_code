@@ -1,8 +1,14 @@
 /**
- * STATION IMAGE PROXY - v2.0.0 (Universal Builder)
+ * STATION IMAGE PROXY
  * * Instructions:
- * 1. Add a camera once to the MAPPING object below.
- * 2. Access via URL: ?img=key1+key2&layout=1,2,3&refresh=fast,moderate,slow
+ * 1. Add new images to the appropriate section (River Gauges, DOT Cameras, etc.)
+      - New sections can be created, if necessary, as long as the syntax of the links is the same as the existing code
+ * 2. Access images via URL: https://bwehner.workers.dev/?img=key1+key2&layout=2&refresh=fast
+      - replace key1, key2, etc. with the image keys below (redriverlevel, i94VeteransBlvd-south, etc.)
+      - if only 1 image is used, do not add +key2 and skip right to &layout
+      - layout and refresh do not need to be added if the default values are being used (defaults below in the Determine Layout and Determine Refresh Rate sections)
+      - layout should be changed to 1, 2 or 3, depending on the need (layouts defined just below this section)
+      - refresh should be changed to fast, moderate, or slow, depending on the need (refresh rates defined just below this section)
  */
 
 // --- GLOBAL CONTROL PANEL ---
