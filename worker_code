@@ -93,8 +93,8 @@ export default {
 
     // --- STACKED LOGIC ---
     if (isStacked) {
-      const src1 = MAPPING[keys];
-      const src2 = MAPPING[keys];
+    const src1 = MAPPING[keys];
+      [cite_start]const src2 = MAPPING[keys[1]];
 
       if (!src1 || !src2) return generateFallback(layout.w, layout.h, "CAMERA KEY NOT FOUND");
 
