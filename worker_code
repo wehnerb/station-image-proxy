@@ -25,7 +25,7 @@ const REFRESH_TIMES = {
 // Add your cameras here once. No layouts or refresh rates needed here.
 const MAPPING = {
 
-  // NOAA / River
+  // NOAA River Gauges
   "redriverlevel": "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
 
   // NDDOT Cameras
