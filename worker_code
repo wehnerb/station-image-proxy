@@ -45,7 +45,7 @@ const MAPPING = {
 "i29i94-north": "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelnorth.jpg",
 "i29i94-south": "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelsouth.jpg",
 "i94i29-east": "https://www.dot.nd.gov/travel-info/cameras/fargotrileveleast.jpg",
-"i94i29-west": "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg"
+"i94i29-west": "https://www.dot.nd.gov/travel-info/cameras/fargotrilevelwest.jpg",
 "i9425thStS-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP350.611Fargo25thStEast.jpg",
 "i94UniversityDrS-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrEast.jpg",
 "i94UniversityDrS-west": "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrWest.jpg",
@@ -91,12 +91,16 @@ export default {
     const keys = imgParam.split('+');
     const isStacked = keys.length > 1;
 
-    // --- STACKED LOGIC ---
+  // --- STACKED LOGIC ---
     if (isStacked) {
-      const src1 = MAPPING[keys];
-      const src2 = MAPPING[keys];
+      // FIX: Use index [cite_start]and [1] to get the specific keys from the array
+      const src1 = MAPPING[keys]; 
+      [cite_start]const src2 = MAPPING[keys[1]];
 
       if (!src1 || !src2) return generateFallback(layout.w, layout.h, "CAMERA KEY NOT FOUND");
+
+    }
+
 
       const imageWidth = layout.w;
       const imageHeight = (720 - STACK_GAP) / 2;
@@ -123,7 +127,7 @@ export default {
     }
 
     // --- SINGLE IMAGE LOGIC ---
-    const src = MAPPING[keys];
+    const src = MAPPING[keys]; 
     if (!src) return generateFallback(layout.w, layout.h, "CAMERA KEY NOT FOUND");
 
     const weservURL = `https://images.weserv.nl/?url=${encodeURIComponent(src)}&w=${layout.w}&h=${layout.h}&fit=contain&bg=transparent&v=${CACHE_VERSION}&time=${bucket}`;
