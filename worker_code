@@ -149,7 +149,7 @@ function generateFallback(width, height, customMsg = "IMAGE UNAVAILABLE") {
       ${customMsg}
     </text>
     <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#bdc3c7">
-      Check your URL or wait for source
+      Image will return shortly
     </text>
   </svg>`;
   
