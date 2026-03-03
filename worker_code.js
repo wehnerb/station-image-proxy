@@ -8,9 +8,9 @@ const CACHE_VERSION = 2;
 const STACK_GAP = 10; // Pixels between stacked images
 
 const LAYOUTS = {
-“1”: { w: 1735, h: 720 }, // Wide (1-column)
-“2”: { w: 852,  h: 720 }, // Split (2-column)
-“3”: { w: 558,  h: 720 }  // Tri (3-column)
+“wide”: { w: 1735, h: 720 }, // Wide (1-column)
+“split”: { w: 852,  h: 720 }, // Split (2-column)
+“tri”: { w: 558,  h: 720 }  // Tri (3-column)
 };
 
 const REFRESH_TIMES = {
@@ -77,8 +77,8 @@ const imgParam = url.searchParams.get(“img”);
 if (!imgParam) return new Response("Error: Missing img parameter", { status: 400 });
 
 // Determine Layout (Default to 2/Split if not specified)
-const layoutKey = url.searchParams.get("layout") || "2";
-const layout = LAYOUTS[layoutKey] || LAYOUTS["2"];
+const layoutKey = url.searchParams.get("layout") || "split";
+const layout = LAYOUTS[layoutKey] || LAYOUTS["split"];
 
 // Determine Refresh Rate (Default to fast if not specified)
 const refreshKey = url.searchParams.get("refresh") || "fast";
