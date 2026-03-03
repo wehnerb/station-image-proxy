@@ -73,7 +73,6 @@ async fetch(request, env, ctx) {
 const url = new URL(request.url);
 const imgParam = url.searchParams.get(“img”);
 
-```
 if (!imgParam) return new Response("Error: Missing img parameter", { status: 400 });
 
 // Determine Layout (Default to 2/Split if not specified)
