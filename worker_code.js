@@ -21,8 +21,6 @@ const REFRESH_TIMES = {
 // IMAGE MAPPING
 const MAPPING = {
 
-// Test comment for full updating system test
-
   // NOAA River Gauges
   "riverlevel-redriver": "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
 
