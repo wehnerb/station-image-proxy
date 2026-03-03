@@ -8,9 +8,9 @@ const CACHE_VERSION = 2;
 const STACK_GAP = 10; // Pixels between stacked images
 
 const LAYOUTS = {
-“wide”: { w: 1735, h: 720 }, // Wide (1-column)
-“split”: { w: 852,  h: 720 }, // Split (2-column)
-“tri”: { w: 558,  h: 720 }  // Tri (3-column)
+  "wide":  { w: 1735, h: 720 },
+  "split": { w: 852,  h: 720 },
+  "tri":   { w: 558,  h: 720 }
 };
 
 const REFRESH_TIMES = {
