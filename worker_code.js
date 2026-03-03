@@ -158,7 +158,6 @@ try {
 } catch (err) {
   return generateFallback(layout.w, layout.h);
 }
-```
 
 }
 };
