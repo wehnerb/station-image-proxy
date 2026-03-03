@@ -4,23 +4,29 @@
 
 // GLOBAL CONTROL PANEL
 const CACHE_VERSION = 2;
-const STACK_GAP = 10;
+const STACK_GAP = 10; // Change this value to change the spacing between stacked images
 
 const LAYOUTS = {
-  "wide":  { w: 1735, h: 720 },
-  "split": { w: 852,  h: 720 },
-  "tri":   { w: 558,  h: 720 }
+  "wide":  { w: 1735, h: 720 }, // These values should not change as they are the exact sizes of images in a 1 column layout
+  "split": { w: 852,  h: 720 }, // These values should not change as they are the exact sizes of images in a 2 column layout
+  "tri":   { w: 558,  h: 720 } // These values should not change as they are the exact sizes of images in a 3 column layout
 };
 
 const REFRESH_TIMES = {
-  "slow":     3600,
-  "moderate": 1200,
-  "fast":     300
+  "slow":     3600, // 1 hour refresh
+  "moderate": 1200, // 20 minute refresh
+  "fast":     300 // 5 minute refresh
 };
 
 // IMAGE MAPPING
 const MAPPING = {
+
+  // NOAA River Gauges
   "riverlevel-redriver": "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
+
+  // ND DOT Cameras
+
+  // I-94 Cameras
   "i94VeteransBlvd-south": "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBSouth.jpg",
   "i94VeteransBlvd-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP347.565Fargo9thStEEBEast.jpg",
   "i9445thStS-south": "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStSouth.jpg",
@@ -38,6 +44,8 @@ const MAPPING = {
   "i94UniversityDrS-west": "https://www.dot.nd.gov/travel-info/cameras/I94RP351.617FargoUniversityDrWest.jpg",
   "i94RedRiver-east": "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverEast.jpg",
   "i94RedRiver-west": "https://www.dot.nd.gov/travel-info/cameras/I94RP352FargoRedRiverWest.jpg",
+
+  // I-29 Cameras
   "i2970thAveS-north": "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSNorth.jpg",
   "i2970thAveS-south": "https://www.dot.nd.gov/travel-info/cameras/I29RP58.765FargoSouthof64thAveSSouth.jpg",
   "i2952ndAveS-north": "https://www.dot.nd.gov/travel-info/cameras/I29RP60.293Fargo52ndAveSSBNorth.jpg",
@@ -65,10 +73,10 @@ export default {
 
     if (!imgParam) return new Response("Error: Missing img parameter", { status: 400 });
 
-    const layoutKey = url.searchParams.get("layout") || "split";
+    const layoutKey = url.searchParams.get("layout") || "split"; // Default layout is split layout
     const layout = LAYOUTS[layoutKey] || LAYOUTS["split"];
 
-    const refreshKey = url.searchParams.get("refresh") || "fast";
+    const refreshKey = url.searchParams.get("refresh") || "fast"; // Default refresh time is fast refresh
     const ttl = REFRESH_TIMES[refreshKey] || REFRESH_TIMES["fast"];
     const bucket = Math.floor(Date.now() / 1000 / ttl);
 
