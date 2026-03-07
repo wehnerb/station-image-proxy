@@ -24,6 +24,9 @@ const MAPPING = {
   // NOAA River Gauges
   "riverlevel-redriver": "https://water.noaa.gov/resources/hydrographs/fgon8_hg.png",
 
+  // USGS River Images
+  "river-redriver": "https://usgs-nims-images.s3.amazonaws.com/overlay/ND_Red_River_of_the_North_at_Fargo/ND_Red_River_of_the_North_at_Fargo_newest.jpg",
+
   // ND DOT Cameras
 
   // I-94 Cameras
