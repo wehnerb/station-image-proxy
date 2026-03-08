@@ -1,9 +1,14 @@
+# ── Deploy workflow for station-image-proxy ─────────────────────────────────
+# Pushing to the staging branch deploys to the staging Worker
+# Pushing to the main branch deploys to the production Worker
+
 name: Deploy to Cloudflare Workers
 
 on:
   push:
     branches:
       - main
+      - staging
 
 jobs:
   deploy:
@@ -12,8 +17,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Cloudflare Workers
+      # ── Deploy to staging Worker when pushing to staging branch ────────────
+      - name: Deploy to Staging
+        if: github.ref == 'refs/heads/staging'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: staging
+
+      # ── Deploy to production Worker when pushing to main branch ────────────
+      - name: Deploy to Production
+        if: github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: production
