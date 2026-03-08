@@ -66,7 +66,9 @@ const MAPPING = {
   "i29MainAve-south": "https://www.dot.nd.gov/travel-info/cameras/I29RP65.272FargoMainAveSBSouth.jpg",
   "i297thAveN-south": "https://www.dot.nd.gov/travel-info/cameras/I29RP65.741Fargo7thAveNSouth.jpg",
   "i2919thAveN-north": "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNNorth.jpg",
-  "i2919thAveN-south": "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNSouth.jpg"
+  "i2919thAveN-south": "https://www.dot.nd.gov/travel-info/cameras/I29RP66.894Fargo19thAveNSouth.jpg",
+  "i2919thAveN-east": "https://www.dot.nd.gov/travel-info/cameras/I29RP67.241Fargo19thAveNEastRampEast.jpg",
+  "i2919thAveN-west": "https://www.dot.nd.gov/travel-info/cameras/I29RP67.241Fargo19thAveNEastRampWest.jpg"
 };
 
 export default {
