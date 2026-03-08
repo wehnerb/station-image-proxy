@@ -1,3 +1,13 @@
 name = "station-image-proxy"
 main = "worker_code.js"
 compatibility_date = "2026-01-01"
+
+# ── Production environment (main branch deploys here) ──────────────────────
+# Resolves to: station-image-proxy.bwehner.workers.dev
+[env.production]
+name = "station-image-proxy"
+
+# ── Staging environment (staging branch deploys here) ──────────────────────
+# Resolves to: station-image-proxy-staging.bwehner.workers.dev
+[env.staging]
+name = "station-image-proxy-staging"
