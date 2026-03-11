@@ -55,6 +55,7 @@ These pixel values match the exact column sizes of the display hardware. **Do no
 | `wide` | 1735 | 720 | Full-width single column display |
 | `split` | 852 | 720 | Two-column display (default) |
 | `tri` | 558 | 720 | Three-column display |
+| `full` | 1920 | 1075 | Three-column display |
 
 ---
 
