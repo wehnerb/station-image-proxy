@@ -22,7 +22,7 @@ const LAYOUTS = {
   "wide":  { w: 1735, h: 720 }, // 1-column full-width layout
   "split": { w: 852,  h: 720 }, // 2-column layout (default)
   "tri":   { w: 558,  h: 720 }, // 3-column layout
-  "full":   { w: 1920,  h: 1075 }, // full-screen layout
+  "full":   { w: 1920,  h: 1077 }, // full-screen layout
 };
 
 // ============================================================
