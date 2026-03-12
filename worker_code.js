@@ -97,6 +97,13 @@ const MAPPING = {
 // ============================================================
 export default {
   async fetch(request, env) {
+
+    // Only GET requests are valid for this Worker.
+// All other HTTP methods are rejected immediately before any processing occurs.
+if (request.method !== 'GET') {
+  return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'GET' } });
+}
+    
     const url      = new URL(request.url);
     const imgParam = url.searchParams.get("img");
 
@@ -125,7 +132,8 @@ export default {
     // --------------------------------------------------------
     if (isStacked) {
       if (keys.length > 2) {
-        return generateFallback(layout.w, layout.h, "MAX 2 IMAGES FOR STACKING");
+        console.log(`[station-image-proxy] Stacking error: too many keys (${keys.length}) requested`);
+return generateFallback(layout.w, layout.h);
       }
 
       const src1        = MAPPING[keys[0]];
@@ -141,19 +149,23 @@ export default {
         renderSlot(src2, bottomY, imageWidth, imageHeight, bucket) +
         `</svg>`;
 
-      return new Response(compositeSvg, {
-        headers: {
-          "Content-Type":  "image/svg+xml",
-          "Cache-Control": `public, max-age=${ttl}, must-revalidate`,
-        },
-      });
+     return new Response(compositeSvg, {
+  headers: {
+    "Content-Type":          "image/svg+xml",
+    "Cache-Control":         `public, max-age=${ttl}, must-revalidate`,
+    "X-Content-Type-Options": "nosniff",
+  },
+});
     }
 
     // --------------------------------------------------------
     // SINGLE IMAGE PATH — fetch, resize, and return directly
     // --------------------------------------------------------
     const src = MAPPING[keys[0]];
-    if (!src) return generateFallback(layout.w, layout.h, "CAMERA KEY NOT FOUND");
+    if (!src) {
+  console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
+  return generateFallback(layout.w, layout.h);
+}
 
     const weservURL =
       `https://images.weserv.nl/?url=${encodeURIComponent(src)}` +
@@ -175,12 +187,12 @@ export default {
       if (!res.ok) throw new Error("Source Down");
 
       return new Response(res.body, {
-        headers: {
-          "Content-Type":    res.headers.get("content-type") || "image/jpeg",
-          "Cache-Control":   `public, max-age=${ttl}, must-revalidate`,
-          "X-System-Version": CACHE_VERSION.toString(),
-        },
-      });
+  headers: {
+    "Content-Type":          res.headers.get("content-type") || "image/jpeg",
+    "Cache-Control":         `public, max-age=${ttl}, must-revalidate`,
+    "X-Content-Type-Options": "nosniff",
+  },
+});
     } catch (err) {
       return generateFallback(layout.w, layout.h);
     }
@@ -229,13 +241,26 @@ function generateFallback(width, height, customMsg = "IMAGE UNAVAILABLE") {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
     `<rect width="100%" height="100%" fill="none"/>` +
     `<text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" ` +
+
+// SECURITY NOTE: customMsg is injected directly into SVG text content without escaping.
+// This is safe as long as customMsg is only ever passed a hardcoded string literal from
+// within this Worker. It must NEVER be populated with user-supplied input (e.g. a URL
+// parameter value), an external API response, or any other value that cannot be fully
+// trusted. Doing so would introduce an SVG/HTML injection vulnerability. If this function
+// is ever extended to accept external input, all angle brackets, quotes, and ampersands
+// in customMsg must be escaped before injection.
+    
     `font-family="sans-serif" font-weight="bold" font-size="32" fill="#e74c3c">${customMsg}</text>` +
     `<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" ` +
     `font-family="sans-serif" font-size="20" fill="#bdc3c7">Image will return shortly</text>` +
     `</svg>`;
 
   return new Response(svg, {
-    status:  503,
-    headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" },
-  });
+  status:  503,
+  headers: {
+    "Content-Type":          "image/svg+xml",
+    "Cache-Control":         "no-store",
+    "X-Content-Type-Options": "nosniff",
+  },
+});
 }
