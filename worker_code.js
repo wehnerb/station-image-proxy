@@ -187,11 +187,12 @@ return generateFallback(layout.w, layout.h);
       if (!res.ok) throw new Error("Source Down");
 
       return new Response(res.body, {
-        headers: {
-          "Content-Type":    res.headers.get("content-type") || "image/jpeg",
-          "Cache-Control":   `public, max-age=${ttl}, must-revalidate`,
-        },
-      });
+  headers: {
+    "Content-Type":          res.headers.get("content-type") || "image/jpeg",
+    "Cache-Control":         `public, max-age=${ttl}, must-revalidate`,
+    "X-Content-Type-Options": "nosniff",
+  },
+});
     } catch (err) {
       return generateFallback(layout.w, layout.h);
     }
@@ -255,7 +256,11 @@ function generateFallback(width, height, customMsg = "IMAGE UNAVAILABLE") {
     `</svg>`;
 
   return new Response(svg, {
-    status:  503,
-    headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" },
-  });
+  status:  503,
+  headers: {
+    "Content-Type":          "image/svg+xml",
+    "Cache-Control":         "no-store",
+    "X-Content-Type-Options": "nosniff",
+  },
+});
 }
