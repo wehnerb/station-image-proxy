@@ -125,7 +125,8 @@ export default {
     // --------------------------------------------------------
     if (isStacked) {
       if (keys.length > 2) {
-        return generateFallback(layout.w, layout.h, "MAX 2 IMAGES FOR STACKING");
+        console.log(`[station-image-proxy] Stacking error: too many keys (${keys.length}) requested`);
+return generateFallback(layout.w, layout.h);
       }
 
       const src1        = MAPPING[keys[0]];
@@ -153,7 +154,10 @@ export default {
     // SINGLE IMAGE PATH — fetch, resize, and return directly
     // --------------------------------------------------------
     const src = MAPPING[keys[0]];
-    if (!src) return generateFallback(layout.w, layout.h, "CAMERA KEY NOT FOUND");
+    if (!src) {
+  console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
+  return generateFallback(layout.w, layout.h);
+}
 
     const weservURL =
       `https://images.weserv.nl/?url=${encodeURIComponent(src)}` +
@@ -178,7 +182,6 @@ export default {
         headers: {
           "Content-Type":    res.headers.get("content-type") || "image/jpeg",
           "Cache-Control":   `public, max-age=${ttl}, must-revalidate`,
-          "X-System-Version": CACHE_VERSION.toString(),
         },
       });
     } catch (err) {
@@ -229,6 +232,15 @@ function generateFallback(width, height, customMsg = "IMAGE UNAVAILABLE") {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
     `<rect width="100%" height="100%" fill="none"/>` +
     `<text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" ` +
+
+// SECURITY NOTE: customMsg is injected directly into SVG text content without escaping.
+// This is safe as long as customMsg is only ever passed a hardcoded string literal from
+// within this Worker. It must NEVER be populated with user-supplied input (e.g. a URL
+// parameter value), an external API response, or any other value that cannot be fully
+// trusted. Doing so would introduce an SVG/HTML injection vulnerability. If this function
+// is ever extended to accept external input, all angle brackets, quotes, and ampersands
+// in customMsg must be escaped before injection.
+    
     `font-family="sans-serif" font-weight="bold" font-size="32" fill="#e74c3c">${customMsg}</text>` +
     `<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" ` +
     `font-family="sans-serif" font-size="20" fill="#bdc3c7">Image will return shortly</text>` +
