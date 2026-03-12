@@ -149,12 +149,13 @@ return generateFallback(layout.w, layout.h);
         renderSlot(src2, bottomY, imageWidth, imageHeight, bucket) +
         `</svg>`;
 
-      return new Response(compositeSvg, {
-        headers: {
-          "Content-Type":  "image/svg+xml",
-          "Cache-Control": `public, max-age=${ttl}, must-revalidate`,
-        },
-      });
+     return new Response(compositeSvg, {
+  headers: {
+    "Content-Type":          "image/svg+xml",
+    "Cache-Control":         `public, max-age=${ttl}, must-revalidate`,
+    "X-Content-Type-Options": "nosniff",
+  },
+});
     }
 
     // --------------------------------------------------------
