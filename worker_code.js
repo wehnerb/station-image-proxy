@@ -97,6 +97,13 @@ const MAPPING = {
 // ============================================================
 export default {
   async fetch(request, env) {
+
+    // Only GET requests are valid for this Worker.
+// All other HTTP methods are rejected immediately before any processing occurs.
+if (request.method !== 'GET') {
+  return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'GET' } });
+}
+    
     const url      = new URL(request.url);
     const imgParam = url.searchParams.get("img");
 
