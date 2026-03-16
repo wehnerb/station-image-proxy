@@ -199,6 +199,55 @@ return generateFallback(layout.w, layout.h);
   },
 };
 
+// ============================================================
+// FETCH AS DATA URI
+// Fetches a single image from images.weserv.nl at the specified
+// dimensions and returns it as a base64-encoded data URI string.
+// Returns null if the fetch fails or times out, allowing the
+// caller to render an error placeholder in its place.
+//
+// Fetching server-side and embedding as a data URI means the
+// complete composite SVG (including image data) is cached by
+// Cloudflare as a single response — display browsers never make
+// direct calls to images.weserv.nl for stacked images, eliminating
+// the rate limiting risk on stacked image requests.
+// ============================================================
+async function fetchAsDataUri(src, width, height, bucket) {
+  const weservURL =
+    "https://images.weserv.nl/?url=" + encodeURIComponent(src) +
+    "&w=" + width + "&h=" + height + "&fit=contain&bg=transparent" +
+    "&v=" + CACHE_VERSION + "&time=" + bucket;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(weservURL, {
+      signal:  controller.signal,
+      headers: { "User-Agent": "FireStationDisplay/2.0" },
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get("content-type") || "image/jpeg";
+    const buffer      = await res.arrayBuffer();
+
+    // Convert ArrayBuffer to base64 using a safe byte-by-byte loop.
+    // The spread operator (String.fromCharCode(...new Uint8Array(buffer)))
+    // can overflow the call stack for large image buffers and must not be used.
+    const bytes = new Uint8Array(buffer);
+    let binary  = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+
+    return "data:" + contentType + ";base64," + btoa(binary);
+
+  } catch (err) {
+    return null;
+  }
+}
 
 // ============================================================
 // RENDER SLOT
