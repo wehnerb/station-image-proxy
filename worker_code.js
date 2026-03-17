@@ -261,10 +261,17 @@ async function fetchAsDataUri(src, width, height, bucket) {
     // Convert ArrayBuffer to base64 using a safe byte-by-byte loop.
     // The spread operator (String.fromCharCode(...new Uint8Array(buffer)))
     // can overflow the call stack for large image buffers and must not be used.
-    const bytes = new Uint8Array(buffer);
-    let binary  = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
+  
+    // Process in chunks using apply() for native performance.
+    // Single-character iteration is too CPU-intensive for the
+    // Cloudflare Workers free tier 10ms CPU limit on large images.
+    // Chunks of 8192 bytes stay well within call stack limits
+    // while being significantly faster than byte-by-byte processing.
+    const bytes      = new Uint8Array(buffer);
+    const CHUNK_SIZE = 8192;
+    let binary       = "";
+    for (let i = 0; i < bytes.byteLength; i += CHUNK_SIZE) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK_SIZE));
     }
 
     return "data:" + contentType + ";base64," + btoa(binary);
