@@ -10,7 +10,7 @@
 //                cached images across all displays
 // STACK_GAP     : Pixel gap between vertically stacked images
 // ============================================================
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const STACK_GAP     = 10;
 
 // ============================================================
