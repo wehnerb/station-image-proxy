@@ -10,7 +10,7 @@
 //                cached images across all displays
 // STACK_GAP     : Pixel gap between vertically stacked images
 // ============================================================
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 2;
 const STACK_GAP     = 10;
 
 // ============================================================
@@ -128,18 +128,12 @@ if (request.method !== 'GET') {
     const isStacked = keys.length > 1;
 
     // --------------------------------------------------------
-    // STACKED IMAGE PATH — two images composited vertically.
-    // Both images are fetched server-side and embedded as base64
-    // data URIs so the complete composite is cached by Cloudflare
-    // as a single response. Display browsers never make direct
-    // calls to images.weserv.nl for stacked images, eliminating
-    // the rate limiting risk that existed when image URLs were
-    // embedded in the SVG and fetched client-side.
+    // STACKED IMAGE PATH — two images composited vertically
     // --------------------------------------------------------
     if (isStacked) {
       if (keys.length > 2) {
-        console.log("[station-image-proxy] Stacking error: too many keys (" + keys.length + ") requested");
-        return generateFallback(layout.w, layout.h);
+        console.log(`[station-image-proxy] Stacking error: too many keys (${keys.length}) requested`);
+return generateFallback(layout.w, layout.h);
       }
 
       const src1        = MAPPING[keys[0]];
@@ -148,39 +142,20 @@ if (request.method !== 'GET') {
       const imageHeight = (layout.h - STACK_GAP) / 2;
       const bottomY     = imageHeight + STACK_GAP;
 
-      // Fetch both images in parallel to minimise latency.
-      // If either fetch returns null (source down or key not found),
-      // an error placeholder is rendered in that slot instead.
-      const [dataUri1, dataUri2] = await Promise.all([
-        src1 ? fetchAsDataUri(src1, imageWidth, imageHeight, bucket) : Promise.resolve(null),
-        src2 ? fetchAsDataUri(src2, imageWidth, imageHeight, bucket) : Promise.resolve(null),
-      ]);
-
-      // Build the composite SVG with embedded image data.
-      // Each slot renders either the fetched image or an error
-      // placeholder if the source was unavailable or key unknown.
-      const slot1 = dataUri1
-        ? "<image href=\"" + dataUri1 + "\" x=\"0\" y=\"0\" width=\"" + imageWidth + "\" height=\"" + imageHeight + "\" />"
-        : renderErrorSlot(0, imageWidth, imageHeight, src1 ? "IMAGE UNAVAILABLE" : "CAMERA KEY NOT FOUND");
-
-      const slot2 = dataUri2
-        ? "<image href=\"" + dataUri2 + "\" x=\"0\" y=\"" + bottomY + "\" width=\"" + imageWidth + "\" height=\"" + imageHeight + "\" />"
-        : renderErrorSlot(bottomY, imageWidth, imageHeight, src2 ? "IMAGE UNAVAILABLE" : "CAMERA KEY NOT FOUND");
-
       const compositeSvg =
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + imageWidth + "\" height=\"" + layout.h + "\">" +
-        "<rect width=\"100%\" height=\"100%\" fill=\"none\"/>" +
-        slot1 +
-        slot2 +
-        "</svg>";
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${layout.h}">` +
+        `<rect width="100%" height="100%" fill="none"/>` +
+        renderSlot(src1, 0, imageWidth, imageHeight, bucket) +
+        renderSlot(src2, bottomY, imageWidth, imageHeight, bucket) +
+        `</svg>`;
 
-      return new Response(compositeSvg, {
-        headers: {
-          "Content-Type":          "image/svg+xml",
-          "Cache-Control":         "public, max-age=" + ttl + ", must-revalidate",
-          "X-Content-Type-Options": "nosniff",
-        },
-      });
+     return new Response(compositeSvg, {
+  headers: {
+    "Content-Type":          "image/svg+xml",
+    "Cache-Control":         `public, max-age=${ttl}, must-revalidate`,
+    "X-Content-Type-Options": "nosniff",
+  },
+});
     }
 
     // --------------------------------------------------------
@@ -224,85 +199,37 @@ if (request.method !== 'GET') {
   },
 };
 
-// ============================================================
-// FETCH AS DATA URI
-// Fetches a single image from images.weserv.nl at the specified
-// dimensions and returns it as a base64-encoded data URI string.
-// Returns null if the fetch fails or times out, allowing the
-// caller to render an error placeholder in its place.
-//
-// Fetching server-side and embedding as a data URI means the
-// complete composite SVG (including image data) is cached by
-// Cloudflare as a single response — display browsers never make
-// direct calls to images.weserv.nl for stacked images, eliminating
-// the rate limiting risk on stacked image requests.
-// ============================================================
-async function fetchAsDataUri(src, width, height, bucket) {
-  const weservURL =
-    "https://images.weserv.nl/?url=" + encodeURIComponent(src) +
-    "&w=" + width + "&h=" + height + "&fit=contain&bg=transparent" +
-    "&v=" + CACHE_VERSION + "&time=" + bucket;
-
-  try {
-    const controller = new AbortController();
-    const timeoutId  = setTimeout(() => controller.abort(), 5000);
-
-    const res = await fetch(weservURL, {
-      signal:  controller.signal,
-      headers: { "User-Agent": "FireStationDisplay/2.0" },
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) return null;
-
-    const contentType = res.headers.get("content-type") || "image/jpeg";
-    const buffer      = await res.arrayBuffer();
-
-    // Convert ArrayBuffer to base64 using a safe byte-by-byte loop.
-    // The spread operator (String.fromCharCode(...new Uint8Array(buffer)))
-    // can overflow the call stack for large image buffers and must not be used.
-  
-    // Process in chunks using apply() for native performance.
-    // Single-character iteration is too CPU-intensive for the
-    // Cloudflare Workers free tier 10ms CPU limit on large images.
-    // Chunks of 8192 bytes stay well within call stack limits
-    // while being significantly faster than byte-by-byte processing.
-    const bytes      = new Uint8Array(buffer);
-    const CHUNK_SIZE = 8192;
-    let binary       = "";
-    for (let i = 0; i < bytes.byteLength; i += CHUNK_SIZE) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK_SIZE));
-    }
-
-    return "data:" + contentType + ";base64," + btoa(binary);
-
-  } catch (err) {
-    return null;
-  }
-}
 
 // ============================================================
-// RENDER ERROR SLOT
-// Returns an SVG error placeholder for one slot in a stacked
-// composite, used when an image source is unavailable or the
-// key was not found in MAPPING.
-// Replaces the former renderSlot function, which combined both
-// the valid-image and error-placeholder cases. Those cases are
-// now handled separately: valid images are fetched server-side
-// by fetchAsDataUri and embedded as data URIs; invalid or
-// unavailable images fall through to this function.
+// RENDER SLOT
+// Returns an SVG element for one image slot within a stacked
+// composite. If the image key was not found in MAPPING, renders
+// a styled error placeholder in its place.
 // Defined at module level so it is not re-created on every request.
 // ============================================================
-function renderErrorSlot(y, imageWidth, imageHeight, message) {
+function renderSlot(src, y, imageWidth, imageHeight, bucket) {
+  if (src) {
+    // Build the weserv URL and escape & as &amp; for valid SVG attribute syntax
+    const weserv = (
+      `https://images.weserv.nl/?url=${encodeURIComponent(src)}` +
+      `&w=${imageWidth}&h=${imageHeight}&fit=contain&bg=transparent` +
+      `&v=${CACHE_VERSION}&time=${bucket}`
+    ).replaceAll("&", "&amp;");
+
+    return `<image href="${weserv}" x="0" y="${y}" width="${imageWidth}" height="${imageHeight}" />`;
+  }
+
+  // Key not found — render an error placeholder in the slot
   const midY = y + imageHeight / 2;
   return (
-    "<rect x=\"0\" y=\"" + y + "\" width=\"" + imageWidth + "\" height=\"" + imageHeight + "\" fill=\"#1a1a1a\"/>" +
-    "<text x=\"50%\" y=\"" + (midY - 12) + "\" dominant-baseline=\"middle\" text-anchor=\"middle\" " +
-    "font-family=\"sans-serif\" font-weight=\"bold\" font-size=\"28\" fill=\"#e74c3c\">" + message + "</text>" +
-    "<text x=\"50%\" y=\"" + (midY + 20) + "\" dominant-baseline=\"middle\" text-anchor=\"middle\" " +
-    "font-family=\"sans-serif\" font-size=\"18\" fill=\"#bdc3c7\">Check your image key</text>"
+    `<rect x="0" y="${y}" width="${imageWidth}" height="${imageHeight}" fill="#1a1a1a"/>` +
+    `<text x="50%" y="${midY - 12}" dominant-baseline="middle" text-anchor="middle" ` +
+    `font-family="sans-serif" font-weight="bold" font-size="28" fill="#e74c3c">CAMERA KEY NOT FOUND</text>` +
+    `<text x="50%" y="${midY + 20}" dominant-baseline="middle" text-anchor="middle" ` +
+    `font-family="sans-serif" font-size="18" fill="#bdc3c7">Check your image key</text>`
   );
 }
+
 
 // ============================================================
 // GENERATE FALLBACK
