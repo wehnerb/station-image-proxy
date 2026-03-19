@@ -1,5 +1,5 @@
 name = "station-image-proxy"
-main = "worker_code.js"
+main = "src/index.js"
 compatibility_date = "2026-01-01"
 
 # ── Production environment (main branch deploys here) ──────────────────────
