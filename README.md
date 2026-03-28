@@ -30,7 +30,7 @@ Stacked image: Display Screen → Cloudflare Worker → images.weserv.nl (×2, s
 1. The display screen loads the Worker URL with parameters specifying the image key, layout, and refresh rate
 1. The Worker looks up the source URL(s) from its internal mapping
 1. **Single image:** The Worker fetches the image through images.weserv.nl, resized to the exact column dimensions, and returns it directly
-1. **Stacked image:** The Worker fetches both images from images.weserv.nl server-side in parallel, encodes them as base64 data URIs, and assembles them into a single composite SVG with both images embedded
+1. **Stacked image:** The Worker builds an SVG composite containing two <image> elements that reference the weserv.nl resized URLs for each source image. The SVG is returned to the display browser, which then fetches the referenced images directly from weserv.nl when rendering.
 1. Cloudflare caches the complete response for the configured refresh interval — for stacked images this includes all image data, so display browsers never make direct calls to images.weserv.nl
 1. Subsequent requests within that window are served from cache — no upstream calls are made
 
@@ -78,7 +78,7 @@ Two images can be stacked vertically within a single column by separating two im
 - Maximum of **2 images** per stack
 - Attempting to stack 3 or more returns an error image
 - The gap between images is controlled by the `STACK_GAP` constant in `worker_code.js` (currently 10px)
-- Both images are fetched server-side and embedded as base64 data URIs — the display browser receives a single complete SVG and never contacts images.weserv.nl directly. This means multiple stations using the same stacked URL share a single Cloudflare cache entry regardless of how many displays are online
+- The Worker returns a single SVG containing weserv.nl image references — the display browser contacts weserv.nl directly when rendering. The SVG wrapper itself is cached by Cloudflare, so the URL construction and key lookups are not repeated on every request.
 
 -----
 
@@ -190,7 +190,7 @@ Set these under **Settings → Secrets and variables → Actions** in this repos
 Display screens must have outbound HTTPS access (port 443) to:
 
 - `*.workers.dev` — Cloudflare Worker endpoints
-- `images.weserv.nl` — Image resizing service (accessed by the Worker server-side, not the display directly for stacked images; display browsers may still contact this domain for single images)
+- `images.weserv.nl` — Image resizing service (accessed by display browsers directly for both single and stacked images; the Worker constructs the weserv URLs but does not proxy the image data itself)
 - `*.dot.nd.gov` — North Dakota DOT traffic cameras (accessed by the Worker server-side)
 - `water.noaa.gov` — NOAA river gauge images (accessed by the Worker server-side)
 - `usgs-nims-images.s3.amazonaws.com` — USGS river camera images (accessed by the Worker server-side)
