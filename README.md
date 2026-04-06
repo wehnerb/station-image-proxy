@@ -4,6 +4,9 @@ A Cloudflare Worker that resizes, formats, and caches traffic camera and data im
 
 -----
 
+## System Documentation
+Full system documentation is maintained at: https://github.com/wehnerb/ffd-display-system-documentation
+
 ## Overview
 
 Station display screens cannot resize images natively — without intervention, images either fail to fill a column or overflow beyond its boundaries. Additionally, multiple displays requesting the same images simultaneously from the upstream resizing service caused rate limiting, resulting in images failing to load.
