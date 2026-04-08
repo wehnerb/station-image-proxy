@@ -123,12 +123,6 @@ export default {
       return generateErrorPage(layout.w, layout.h, "MISSING IMAGE KEY", "Check URL configuration", 400);
     }
 
-    // Cache-bust timestamp — appended to each source image URL so the display
-    // browser fetches a fresh image on every page reload rather than serving
-    // a locally cached copy. Generated once per request so all images on the
-    // page share the same value.
-    const cacheBust = Date.now();
-
     // Parse and normalise the img parameter — replace spaces with +,
     // split on +, trim whitespace, and discard any empty segments
     const keys      = imgParam.replace(/\s+/g, "+").split("+").map(k => k.trim()).filter(Boolean);
@@ -153,8 +147,8 @@ export default {
 
       const body =
         `<div class="stack">` +
-        renderSlot(src1, layout.w, slotHeight, cacheBust) +
-        renderSlot(src2, layout.w, slotHeight, cacheBust) +
+        renderSlot(src1, layout.w, slotHeight) +
+        renderSlot(src2, layout.w, slotHeight) +
         `</div>`;
 
       return buildResponse(body, layout, ttl);
@@ -169,7 +163,7 @@ export default {
       return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400);
     }
 
-    const body = renderSlot(src, layout.w, layout.h, cacheBust);
+    const body = renderSlot(src, layout.w, layout.h);
 
     return buildResponse(body, layout, ttl);
   },
@@ -185,7 +179,7 @@ export default {
 // reveals the error card if the source URL fails to load.
 // Defined at module level so it is not re-created on every request.
 // ============================================================
-function renderSlot(src, width, height, cacheBust) {
+function renderSlot(src, width, height) {
   if (!src) {
     // Key was not found in MAPPING — show a configuration error card in this slot
     return (
@@ -198,16 +192,13 @@ function renderSlot(src, width, height, cacheBust) {
     );
   }
 
-  // Append cache-bust timestamp as a query parameter so the display browser
-  // requests a fresh copy of the image on every page reload.
   // SECURITY NOTE: src comes exclusively from the MAPPING constant above and
   // is never derived from user-supplied input, so URL injection is not possible.
-  const srcWithBust = `${src}?t=${cacheBust}`;
 
   return (
     `<div class="slot" style="width:${width}px;height:${height}px;">` +
     // On load failure, hide the broken img element and show the error card beneath it
-    `<img src="${srcWithBust}" alt="" ` +
+    `<img src="${src}" alt="" ` +
     `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` +
     `<div class="error-card" style="display:none;">` +
     `<span class="error-title">IMAGE UNAVAILABLE</span>` +
