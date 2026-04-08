@@ -25,18 +25,6 @@ const LAYOUTS = {
 };
 
 // ============================================================
-// REFRESH RATES
-// Page reload interval in seconds for each refresh key.
-// Controls how often the display reloads the HTML page and
-// re-fetches source images directly from their origin servers.
-// ============================================================
-const REFRESH_TIMES = {
-  "fast":     300,   // 5 minutes  — frequently changing cameras
-  "moderate": 1200,  // 20 minutes — less frequently changing cameras
-  "slow":     3600,  // 1 hour     — slowly updating data sources
-};
-
-// ============================================================
 // IMAGE MAPPING
 // Maps short key names to source image URLs.
 // Keys must be lowercase and use hyphens only.
@@ -107,13 +95,9 @@ export default {
 
     const url = new URL(request.url);
 
-    // Resolve layout and refresh rate early so dimensions are available for
-    // all error pages, including the missing-parameter error below.
-    // Falls back to defaults if invalid or missing values are passed.
-    const layoutKey  = url.searchParams.get("layout") || "split";
-    const layout     = LAYOUTS[layoutKey] || LAYOUTS["split"];
-    const refreshKey = url.searchParams.get("refresh") || "fast";
-    const ttl        = REFRESH_TIMES[refreshKey] || REFRESH_TIMES["fast"];
+    // Resolve layout, falling back to the default if an invalid or missing value is passed
+    const layoutKey = url.searchParams.get("layout") || "split";
+    const layout    = LAYOUTS[layoutKey] || LAYOUTS["split"];
 
     const imgParam = url.searchParams.get("img");
 
@@ -151,7 +135,7 @@ export default {
         renderSlot(src2, layout.w, slotHeight) +
         `</div>`;
 
-      return buildResponse(body, layout, ttl);
+      return buildResponse(body, layout);
     }
 
     // --------------------------------------------------------
@@ -165,7 +149,7 @@ export default {
 
     const body = renderSlot(src, layout.w, layout.h);
 
-    return buildResponse(body, layout, ttl);
+    return buildResponse(body, layout);
   },
 };
 
@@ -214,12 +198,14 @@ function renderSlot(src, width, height) {
 // Wraps the provided body content in a complete HTML document
 // and returns it as a Response with appropriate headers.
 //
-// The meta refresh tag causes the page to reload on the TTL
-// schedule, triggering a fresh fetch of all source images.
+// Image refresh is handled entirely by the display hardware —
+// the browser re-requests source images directly from their
+// origin servers on its own rendering cycle. No meta refresh
+// tag is included.
 //
 // Cache-Control: no-store prevents the browser from serving a
-// cached copy of the page on refresh, ensuring source images
-// are always re-requested from their origin servers.
+// cached copy of the page, ensuring source images are always
+// re-requested from their origin servers.
 //
 // Backgrounds are set to transparent throughout so the display
 // hardware's built-in background shows through any areas not
@@ -229,14 +215,12 @@ function renderSlot(src, width, height) {
 // loaded as a full-screen iframe by the display system and that
 // header would cause an immediate white error screen.
 // ============================================================
-function buildResponse(body, layout, ttl) {
+function buildResponse(body, layout) {
   const html =
     `<!DOCTYPE html>` +
     `<html>` +
     `<head>` +
     `<meta charset="UTF-8">` +
-    // Reload the page (and re-fetch all images) on the configured refresh schedule
-    `<meta http-equiv="refresh" content="${ttl}">` +
     `<style>` +
     // Reset margins and make all backgrounds transparent so the display
     // hardware's built-in background shows through uncovered areas
