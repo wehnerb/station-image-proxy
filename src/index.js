@@ -1,17 +1,16 @@
 /**
  * STATION IMAGE PROXY
- * Resizes, formats, and caches traffic camera and data images
- * for fire station display screens.
+ * Renders traffic camera and data images for fire station
+ * display screens as HTML pages, scaled via CSS.
+ * Images are fetched directly by the display browser —
+ * no external image processing service is required.
  */
 
 // ============================================================
 // CONFIGURATION
-// CACHE_VERSION : Increment to immediately invalidate all
-//                cached images across all displays
-// STACK_GAP     : Pixel gap between vertically stacked images
+// STACK_GAP : Pixel gap between vertically stacked images
 // ============================================================
-const CACHE_VERSION = 2;
-const STACK_GAP     = 10;
+const STACK_GAP = 10;
 
 // ============================================================
 // LAYOUT DIMENSIONS
@@ -19,20 +18,22 @@ const STACK_GAP     = 10;
 // Do not change these values unless the display hardware changes.
 // ============================================================
 const LAYOUTS = {
-  "wide":  { w: 1735, h: 720 }, // 1-column full-width layout
-  "split": { w: 852,  h: 720 }, // 2-column layout (default)
-  "tri":   { w: 558,  h: 720 }, // 3-column layout
-  "full":   { w: 1920,  h: 1075 }, // full-screen layout
+  "wide":  { w: 1735, h: 720  }, // 1-column full-width layout
+  "split": { w: 852,  h: 720  }, // 2-column layout (default)
+  "tri":   { w: 558,  h: 720  }, // 3-column layout
+  "full":  { w: 1920, h: 1075 }, // full-screen layout
 };
 
 // ============================================================
 // REFRESH RATES
-// Cache TTL in seconds for each refresh key.
+// Page reload interval in seconds for each refresh key.
+// Controls how often the display reloads the HTML page and
+// re-fetches source images directly from their origin servers.
 // ============================================================
 const REFRESH_TIMES = {
-  "fast":     300,  // 5 minutes  — for frequently changing cameras
-  "moderate": 1200, // 20 minutes — for less frequently changing cameras
-  "slow":     3600, // 1 hour     — for slowly updating data (river gauges etc.)
+  "fast":     300,   // 5 minutes  — frequently changing cameras
+  "moderate": 1200,  // 20 minutes — less frequently changing cameras
+  "slow":     3600,  // 1 hour     — slowly updating data sources
 };
 
 // ============================================================
@@ -99,11 +100,11 @@ export default {
   async fetch(request, env) {
 
     // Only GET requests are valid for this Worker.
-// All other HTTP methods are rejected immediately before any processing occurs.
-if (request.method !== 'GET') {
-  return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'GET' } });
-}
-    
+    // All other HTTP methods are rejected immediately before any processing occurs.
+    if (request.method !== 'GET') {
+      return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'GET' } });
+    }
+
     const url      = new URL(request.url);
     const imgParam = url.searchParams.get("img");
 
@@ -118,9 +119,11 @@ if (request.method !== 'GET') {
     const refreshKey = url.searchParams.get("refresh") || "fast";
     const ttl        = REFRESH_TIMES[refreshKey] || REFRESH_TIMES["fast"];
 
-    // Calculate a time bucket so all displays within the same refresh window
-    // share the same cached image rather than generating separate upstream requests
-    const bucket = Math.floor(Date.now() / 1000 / ttl);
+    // Cache-bust timestamp — appended to each source image URL so the display
+    // browser fetches a fresh image on every page reload rather than serving
+    // a locally cached copy. Generated once per request so all images on the
+    // page share the same value.
+    const cacheBust = Date.now();
 
     // Parse and normalise the img parameter — replace spaces with +,
     // split on +, trim whitespace, and discard any empty segments
@@ -128,139 +131,185 @@ if (request.method !== 'GET') {
     const isStacked = keys.length > 1;
 
     // --------------------------------------------------------
-    // STACKED IMAGE PATH — two images composited vertically
+    // STACKED IMAGE PATH — two images displayed vertically
     // --------------------------------------------------------
     if (isStacked) {
       if (keys.length > 2) {
         console.log(`[station-image-proxy] Stacking error: too many keys (${keys.length}) requested`);
-return generateFallback(layout.w, layout.h);
+        return generateErrorPage(layout.w, layout.h);
       }
 
-      const src1        = MAPPING[keys[0]];
-      const src2        = MAPPING[keys[1]];
-      const imageWidth  = layout.w;
-      const imageHeight = (layout.h - STACK_GAP) / 2;
-      const bottomY     = imageHeight + STACK_GAP;
+      const src1       = MAPPING[keys[0]];
+      const src2       = MAPPING[keys[1]];
+      const slotHeight = Math.floor((layout.h - STACK_GAP) / 2);
 
-      const compositeSvg =
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${imageWidth}" height="${layout.h}">` +
-        `<rect width="100%" height="100%" fill="none"/>` +
-        renderSlot(src1, 0, imageWidth, imageHeight, bucket) +
-        renderSlot(src2, bottomY, imageWidth, imageHeight, bucket) +
-        `</svg>`;
+      // Log any unrecognised keys so they are visible in Worker logs
+      if (!src1) console.log(`[station-image-proxy] Unknown image key: "${keys[0]}"`);
+      if (!src2) console.log(`[station-image-proxy] Unknown image key: "${keys[1]}"`);
 
-     return new Response(compositeSvg, {
-  headers: {
-    "Content-Type":          "image/svg+xml",
-    "Cache-Control":         `public, max-age=${ttl}, must-revalidate`,
-    "X-Content-Type-Options": "nosniff",
-  },
-});
+      const body =
+        `<div class="stack">` +
+        renderSlot(src1, layout.w, slotHeight, cacheBust) +
+        renderSlot(src2, layout.w, slotHeight, cacheBust) +
+        `</div>`;
+
+      return buildResponse(body, layout, ttl);
     }
 
     // --------------------------------------------------------
-    // SINGLE IMAGE PATH — fetch, resize, and return directly
+    // SINGLE IMAGE PATH
     // --------------------------------------------------------
     const src = MAPPING[keys[0]];
     if (!src) {
-  console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
-  return generateFallback(layout.w, layout.h);
-}
-
-    const weservURL =
-      `https://images.weserv.nl/?url=${encodeURIComponent(src)}` +
-      `&w=${layout.w}&h=${layout.h}&fit=contain&bg=transparent` +
-      `&v=${CACHE_VERSION}&time=${bucket}`;
-
-    try {
-      // Abort the upstream fetch if weserv doesn't respond within 5 seconds,
-      // preventing the Worker from hanging until Cloudflare's 30s wall limit
-      const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 5000);
-
-      const res = await fetch(weservURL, {
-        signal:  controller.signal,
-        headers: { "User-Agent": "FireStationDisplay/2.0" },
-      });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) throw new Error("Source Down");
-
-      return new Response(res.body, {
-  headers: {
-    "Content-Type":          res.headers.get("content-type") || "image/jpeg",
-    "Cache-Control":         `public, max-age=${ttl}, must-revalidate`,
-    "X-Content-Type-Options": "nosniff",
-  },
-});
-    } catch (err) {
-      return generateFallback(layout.w, layout.h);
+      console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
+      return generateErrorPage(layout.w, layout.h);
     }
+
+    const body = renderSlot(src, layout.w, layout.h, cacheBust);
+
+    return buildResponse(body, layout, ttl);
   },
 };
 
 
 // ============================================================
 // RENDER SLOT
-// Returns an SVG element for one image slot within a stacked
-// composite. If the image key was not found in MAPPING, renders
-// a styled error placeholder in its place.
+// Returns an HTML div for one image slot.
+// If src is falsy (key not found in MAPPING), renders a styled
+// error card in place of the image.
+// The img onerror handler hides the failed image element and
+// reveals the error card if the source URL fails to load.
 // Defined at module level so it is not re-created on every request.
 // ============================================================
-function renderSlot(src, y, imageWidth, imageHeight, bucket) {
-  if (src) {
-    // Build the weserv URL and escape & as &amp; for valid SVG attribute syntax
-    const weserv = (
-      `https://images.weserv.nl/?url=${encodeURIComponent(src)}` +
-      `&w=${imageWidth}&h=${imageHeight}&fit=contain&bg=transparent` +
-      `&v=${CACHE_VERSION}&time=${bucket}`
-    ).replaceAll("&", "&amp;");
-
-    return `<image href="${weserv}" x="0" y="${y}" width="${imageWidth}" height="${imageHeight}" />`;
+function renderSlot(src, width, height, cacheBust) {
+  if (!src) {
+    // Key was not found in MAPPING — show a static configuration error card
+    return (
+      `<div class="slot" style="width:${width}px;height:${height}px;">` +
+      `<div class="error-card">` +
+      `<span class="error-title">CAMERA KEY NOT FOUND</span>` +
+      `<span class="error-sub">Check your image key</span>` +
+      `</div>` +
+      `</div>`
+    );
   }
 
-  // Key not found — render an error placeholder in the slot
-  const midY = y + imageHeight / 2;
+  // Append cache-bust timestamp as a query parameter so the display browser
+  // requests a fresh copy of the image on every page reload.
+  // SECURITY NOTE: src comes exclusively from the MAPPING constant above and
+  // is never derived from user-supplied input, so URL injection is not possible.
+  const srcWithBust = `${src}?t=${cacheBust}`;
+
   return (
-    `<rect x="0" y="${y}" width="${imageWidth}" height="${imageHeight}" fill="#1a1a1a"/>` +
-    `<text x="50%" y="${midY - 12}" dominant-baseline="middle" text-anchor="middle" ` +
-    `font-family="sans-serif" font-weight="bold" font-size="28" fill="#e74c3c">CAMERA KEY NOT FOUND</text>` +
-    `<text x="50%" y="${midY + 20}" dominant-baseline="middle" text-anchor="middle" ` +
-    `font-family="sans-serif" font-size="18" fill="#bdc3c7">Check your image key</text>`
+    `<div class="slot" style="width:${width}px;height:${height}px;">` +
+    // On load failure, hide the broken img element and show the error card beneath it
+    `<img src="${srcWithBust}" alt="" ` +
+    `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` +
+    `<div class="error-card" style="display:none;">` +
+    `<span class="error-title">IMAGE UNAVAILABLE</span>` +
+    `<span class="error-sub">Image will return shortly</span>` +
+    `</div>` +
+    `</div>`
   );
 }
 
 
 // ============================================================
-// GENERATE FALLBACK
-// Returns a styled SVG error image for use when an image source
-// is unavailable or an unrecoverable error has occurred.
+// BUILD RESPONSE
+// Wraps the provided body content in a complete HTML document
+// and returns it as a Response with appropriate headers.
+//
+// The meta refresh tag causes the page to reload on the TTL
+// schedule, triggering a fresh fetch of all source images.
+//
+// Cache-Control: no-store prevents the browser from serving a
+// cached copy of the page on refresh, ensuring source images
+// are always re-requested from their origin servers.
+//
+// Backgrounds are set to transparent throughout so the display
+// hardware's built-in background shows through any areas not
+// covered by the image (consistent with object-fit: contain).
+//
+// X-Frame-Options is intentionally omitted — this Worker is
+// loaded as a full-screen iframe by the display system and that
+// header would cause an immediate white error screen.
 // ============================================================
-function generateFallback(width, height, customMsg = "IMAGE UNAVAILABLE") {
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
-    `<rect width="100%" height="100%" fill="none"/>` +
-    `<text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" ` +
+function buildResponse(body, layout, ttl) {
+  const html =
+    `<!DOCTYPE html>` +
+    `<html>` +
+    `<head>` +
+    `<meta charset="UTF-8">` +
+    // Reload the page (and re-fetch all images) on the configured refresh schedule
+    `<meta http-equiv="refresh" content="${ttl}">` +
+    `<style>` +
+    // Reset margins and make all backgrounds transparent so the display
+    // hardware's built-in background shows through uncovered areas
+    `*,html,body{margin:0;padding:0;background:transparent;overflow:hidden;}` +
+    // Stack layout: flex column with the configured gap between the two slots
+    `.stack{display:flex;flex-direction:column;gap:${STACK_GAP}px;` +
+    `width:${layout.w}px;height:${layout.h}px;}` +
+    // Each slot uses explicit inline dimensions; img scales to fill via object-fit
+    `.slot{position:relative;}` +
+    `.slot img{width:100%;height:100%;object-fit:contain;display:block;}` +
+    // Error card: dark background with centred text, matching the previous SVG fallback style
+    `.error-card{width:100%;height:100%;background:#1a1a1a;display:flex;` +
+    `flex-direction:column;align-items:center;justify-content:center;gap:16px;}` +
+    `.error-title{font-family:sans-serif;font-weight:bold;font-size:32px;color:#e74c3c;}` +
+    `.error-sub{font-family:sans-serif;font-size:20px;color:#bdc3c7;}` +
+    `</style>` +
+    `</head>` +
+    `<body>${body}</body>` +
+    `</html>`;
 
-// SECURITY NOTE: customMsg is injected directly into SVG text content without escaping.
-// This is safe as long as customMsg is only ever passed a hardcoded string literal from
-// within this Worker. It must NEVER be populated with user-supplied input (e.g. a URL
-// parameter value), an external API response, or any other value that cannot be fully
-// trusted. Doing so would introduce an SVG/HTML injection vulnerability. If this function
-// is ever extended to accept external input, all angle brackets, quotes, and ampersands
-// in customMsg must be escaped before injection.
-    
-    `font-family="sans-serif" font-weight="bold" font-size="32" fill="#e74c3c">${customMsg}</text>` +
-    `<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" ` +
-    `font-family="sans-serif" font-size="20" fill="#bdc3c7">Image will return shortly</text>` +
-    `</svg>`;
+  return new Response(html, {
+    headers: {
+      "Content-Type":           "text/html;charset=UTF-8",
+      "Cache-Control":          "no-store",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
 
-  return new Response(svg, {
-  status:  503,
-  headers: {
-    "Content-Type":          "image/svg+xml",
-    "Cache-Control":         "no-store",
-    "X-Content-Type-Options": "nosniff",
-  },
-});
+
+// ============================================================
+// GENERATE ERROR PAGE
+// Returns a full-page HTML error response for unrecoverable
+// configuration errors such as an unknown image key or too many
+// stacked images requested.
+//
+// No meta refresh is included — these are configuration errors
+// that a page reload cannot resolve. They require a correction
+// to the display system's configured URL.
+// ============================================================
+function generateErrorPage(width, height) {
+  const html =
+    `<!DOCTYPE html>` +
+    `<html>` +
+    `<head>` +
+    `<meta charset="UTF-8">` +
+    `<style>` +
+    `*,html,body{margin:0;padding:0;background:transparent;overflow:hidden;}` +
+    `.error-card{width:${width}px;height:${height}px;background:#1a1a1a;display:flex;` +
+    `flex-direction:column;align-items:center;justify-content:center;gap:16px;}` +
+    `.error-title{font-family:sans-serif;font-weight:bold;font-size:32px;color:#e74c3c;}` +
+    `.error-sub{font-family:sans-serif;font-size:20px;color:#bdc3c7;}` +
+    `</style>` +
+    `</head>` +
+    `<body>` +
+    `<div class="error-card">` +
+    `<span class="error-title">INVALID IMAGE KEY</span>` +
+    `<span class="error-sub">Check URL configuration</span>` +
+    `</div>` +
+    `</body>` +
+    `</html>`;
+
+  return new Response(html, {
+    status: 503,
+    headers: {
+      "Content-Type":           "text/html;charset=UTF-8",
+      "Cache-Control":          "no-store",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
 }
