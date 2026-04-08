@@ -105,19 +105,23 @@ export default {
       return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'GET' } });
     }
 
-    const url      = new URL(request.url);
-    const imgParam = url.searchParams.get("img");
+    const url = new URL(request.url);
 
-    // Require the img parameter — return a clear error if missing
-    if (!imgParam) {
-      return new Response("Error: Missing required parameter: ?img=KEY", { status: 400 });
-    }
-
-    // Resolve layout and refresh rate, falling back to defaults if invalid values are passed
+    // Resolve layout and refresh rate early so dimensions are available for
+    // all error pages, including the missing-parameter error below.
+    // Falls back to defaults if invalid or missing values are passed.
     const layoutKey  = url.searchParams.get("layout") || "split";
     const layout     = LAYOUTS[layoutKey] || LAYOUTS["split"];
     const refreshKey = url.searchParams.get("refresh") || "fast";
     const ttl        = REFRESH_TIMES[refreshKey] || REFRESH_TIMES["fast"];
+
+    const imgParam = url.searchParams.get("img");
+
+    // Require the img parameter — return a styled error page if missing
+    if (!imgParam) {
+      console.log(`[station-image-proxy] Request received with no img parameter`);
+      return generateErrorPage(layout.w, layout.h, "MISSING IMAGE KEY", "Check URL configuration", 400);
+    }
 
     // Cache-bust timestamp — appended to each source image URL so the display
     // browser fetches a fresh image on every page reload rather than serving
@@ -136,7 +140,7 @@ export default {
     if (isStacked) {
       if (keys.length > 2) {
         console.log(`[station-image-proxy] Stacking error: too many keys (${keys.length}) requested`);
-        return generateErrorPage(layout.w, layout.h);
+        return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400);
       }
 
       const src1       = MAPPING[keys[0]];
@@ -162,7 +166,7 @@ export default {
     const src = MAPPING[keys[0]];
     if (!src) {
       console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
-      return generateErrorPage(layout.w, layout.h);
+      return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400);
     }
 
     const body = renderSlot(src, layout.w, layout.h, cacheBust);
@@ -183,12 +187,12 @@ export default {
 // ============================================================
 function renderSlot(src, width, height, cacheBust) {
   if (!src) {
-    // Key was not found in MAPPING — show a static configuration error card
+    // Key was not found in MAPPING — show a configuration error card in this slot
     return (
       `<div class="slot" style="width:${width}px;height:${height}px;">` +
       `<div class="error-card">` +
-      `<span class="error-title">CAMERA KEY NOT FOUND</span>` +
-      `<span class="error-sub">Check your image key</span>` +
+      `<span class="error-title">INVALID IMAGE KEY</span>` +
+      `<span class="error-sub">Check URL configuration</span>` +
       `</div>` +
       `</div>`
     );
@@ -252,7 +256,7 @@ function buildResponse(body, layout, ttl) {
     // Each slot uses explicit inline dimensions; img scales to fill via object-fit
     `.slot{position:relative;}` +
     `.slot img{width:100%;height:100%;object-fit:contain;display:block;}` +
-    // Error card: dark background with centred text, matching the previous SVG fallback style
+    // Error card: dark background with centred text, consistent across all error states
     `.error-card{width:100%;height:100%;background:#1a1a1a;display:flex;` +
     `flex-direction:column;align-items:center;justify-content:center;gap:16px;}` +
     `.error-title{font-family:sans-serif;font-weight:bold;font-size:32px;color:#e74c3c;}` +
@@ -274,15 +278,18 @@ function buildResponse(body, layout, ttl) {
 
 // ============================================================
 // GENERATE ERROR PAGE
-// Returns a full-page HTML error response for unrecoverable
-// configuration errors such as an unknown image key or too many
-// stacked images requested.
+// Returns a full-page styled HTML error response for
+// unrecoverable configuration errors such as a missing or
+// unknown image key, or too many stacked images requested.
+//
+// Accepts custom title and subtitle text so each error scenario
+// displays a specific, actionable message on screen.
 //
 // No meta refresh is included — these are configuration errors
 // that a page reload cannot resolve. They require a correction
 // to the display system's configured URL.
 // ============================================================
-function generateErrorPage(width, height) {
+function generateErrorPage(width, height, title, subtitle, status) {
   const html =
     `<!DOCTYPE html>` +
     `<html>` +
@@ -298,14 +305,14 @@ function generateErrorPage(width, height) {
     `</head>` +
     `<body>` +
     `<div class="error-card">` +
-    `<span class="error-title">INVALID IMAGE KEY</span>` +
-    `<span class="error-sub">Check URL configuration</span>` +
+    `<span class="error-title">${title}</span>` +
+    `<span class="error-sub">${subtitle}</span>` +
     `</div>` +
     `</body>` +
     `</html>`;
 
   return new Response(html, {
-    status: 503,
+    status,
     headers: {
       "Content-Type":           "text/html;charset=UTF-8",
       "Cache-Control":          "no-store",
