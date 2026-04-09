@@ -182,7 +182,7 @@ function renderSlot(src, width, height) {
   return (
     `<div class="slot" style="width:${width}px;height:${height}px;">` +
     // On load failure, hide the broken img element and show the error card beneath it
-    `<img src="${src}" alt="" ` +
+    `<img src="${src}" alt="" referrerpolicy="no-referrer" ` +
     `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` +
     `<div class="error-card" style="display:none;">` +
     `<span class="error-title">IMAGE UNAVAILABLE</span>` +
