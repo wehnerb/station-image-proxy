@@ -164,13 +164,25 @@ export default {
 // Defined at module level so it is not re-created on every request.
 // ============================================================
 function renderSlot(src, width, height) {
+  const titleFont = Math.floor(Math.min(width, height) * 0.044);
+  const subFont   = Math.floor(Math.min(width, height) * 0.030);
+
+  // Shared slot error card CSS — dark fill so text is legible over the hardware
+  // background in the area where the image would normally appear.
+  const cardCss =
+    `width:100%;height:100%;` +
+    `background:rgba(0,0,0,0.50);` +
+    `display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Math.floor(subFont * 0.5)}px;`;
+  const titleCss = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-weight:700;font-size:${titleFont}px;color:rgba(255,255,255,0.92);letter-spacing:0.06em;`;
+  const subCss   = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-size:${subFont}px;color:rgba(255,255,255,0.55);`;
+
   if (!src) {
-    // Key was not found in MAPPING — show a configuration error card in this slot
+    // Key was not found in MAPPING — show a configuration error card in this slot.
     return (
       `<div class="slot" style="width:${width}px;height:${height}px;">` +
-      `<div class="error-card">` +
-      `<span class="error-title">INVALID IMAGE KEY</span>` +
-      `<span class="error-sub">Check URL configuration</span>` +
+      `<div style="${cardCss}">` +
+      `<span style="${titleCss}">INVALID IMAGE KEY</span>` +
+      `<span style="${subCss}">Check URL configuration</span>` +
       `</div>` +
       `</div>`
     );
@@ -181,12 +193,12 @@ function renderSlot(src, width, height) {
 
   return (
     `<div class="slot" style="width:${width}px;height:${height}px;">` +
-    // On load failure, hide the broken img element and show the error card beneath it
+    // On load failure, hide the broken img element and show the error card beneath it.
     `<img src="${src}" alt="" referrerpolicy="no-referrer" ` +
     `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` +
-    `<div class="error-card" style="display:none;">` +
-    `<span class="error-title">IMAGE UNAVAILABLE</span>` +
-    `<span class="error-sub">Image will return shortly</span>` +
+    `<div style="${cardCss}display:none;">` +
+    `<span style="${titleCss}">IMAGE UNAVAILABLE</span>` +
+    `<span style="${subCss}">Image will return shortly</span>` +
     `</div>` +
     `</div>`
   );
@@ -231,11 +243,6 @@ function buildResponse(body, layout) {
     // Each slot uses explicit inline dimensions; img scales to fill via object-fit
     `.slot{position:relative;}` +
     `.slot img{width:100%;height:100%;object-fit:contain;display:block;}` +
-    // Error card: dark background with centred text, consistent across all error states
-    `.error-card{width:100%;height:100%;background:#1a1a1a;display:flex;` +
-    `flex-direction:column;align-items:center;justify-content:center;gap:16px;}` +
-    `.error-title{font-family:sans-serif;font-weight:bold;font-size:32px;color:#e74c3c;}` +
-    `.error-sub{font-family:sans-serif;font-size:20px;color:#bdc3c7;}` +
     `</style>` +
     `</head>` +
     `<body>${body}</body>` +
@@ -265,23 +272,31 @@ function buildResponse(body, layout) {
 // to the display system's configured URL.
 // ============================================================
 function generateErrorPage(width, height, title, subtitle, status) {
+  const titleFont = Math.floor(Math.min(width, height) * 0.030);
+  const subFont   = Math.floor(Math.min(width, height) * 0.020);
+
   const html =
     `<!DOCTYPE html>` +
-    `<html>` +
+    `<html lang="en">` +
     `<head>` +
     `<meta charset="UTF-8">` +
     `<style>` +
-    `*,html,body{margin:0;padding:0;background:transparent;overflow:hidden;}` +
-    `.error-card{width:${width}px;height:${height}px;background:#1a1a1a;display:flex;` +
-    `flex-direction:column;align-items:center;justify-content:center;gap:16px;}` +
-    `.error-title{font-family:sans-serif;font-weight:bold;font-size:32px;color:#e74c3c;}` +
-    `.error-sub{font-family:sans-serif;font-size:20px;color:#bdc3c7;}` +
+    `*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }` +
+    `html, body {` +
+    `  width: ${width}px; height: ${height}px;` +
+    `  overflow: hidden; background: transparent;` +
+    `  font-family: "Segoe UI", Arial, Helvetica, sans-serif;` +
+    `  display: flex; align-items: center; justify-content: center;` +
+    `}` +
+    `.err-wrap { display: flex; flex-direction: column; align-items: center; gap: ${Math.floor(subFont * 0.6)}px; text-align: center; padding: 0 ${Math.floor(width * 0.06)}px; }` +
+    `.err-title { font-size: ${titleFont}px; font-weight: 700; color: rgba(255,255,255,0.92); letter-spacing: 0.06em; }` +
+    `.err-sub   { font-size: ${subFont}px;   color: rgba(255,255,255,0.55); }` +
     `</style>` +
     `</head>` +
     `<body>` +
-    `<div class="error-card">` +
-    `<span class="error-title">${title}</span>` +
-    `<span class="error-sub">${subtitle}</span>` +
+    `<div class="err-wrap">` +
+    `<div class="err-title">${title}</div>` +
+    `<div class="err-sub">${subtitle}</div>` +
     `</div>` +
     `</body>` +
     `</html>`;
