@@ -173,8 +173,8 @@ function renderSlot(src, width, height) {
     `width:100%;height:100%;` +
     `background:rgba(0,0,0,0.50);` +
     `display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Math.floor(subFont * 0.5)}px;`;
-  const titleCss = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-weight:700;font-size:${titleFont}px;color:rgba(255,255,255,0.92);letter-spacing:0.06em;`;
-  const subCss   = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-size:${subFont}px;color:rgba(255,255,255,0.55);`;
+  const titleCss = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-weight:700;font-size:${titleFont}px;color:#C8102E;letter-spacing:0.06em;`;
+  const subCss   = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-size:${subFont}px;color:rgba(255,255,255,0.92);`;
 
   if (!src) {
     // Key was not found in MAPPING — show a configuration error card in this slot.
@@ -289,8 +289,8 @@ function generateErrorPage(width, height, title, subtitle, status) {
     `  display: flex; align-items: center; justify-content: center;` +
     `}` +
     `.err-wrap { display: flex; flex-direction: column; align-items: center; gap: ${Math.floor(subFont * 0.6)}px; text-align: center; padding: 0 ${Math.floor(width * 0.06)}px; }` +
-    `.err-title { font-size: ${titleFont}px; font-weight: 700; color: rgba(255,255,255,0.92); letter-spacing: 0.06em; }` +
-    `.err-sub   { font-size: ${subFont}px;   color: rgba(255,255,255,0.55); }` +
+    `.err-title { font-size: ${titleFont}px; font-weight: 700; color: #C8102E; letter-spacing: 0.06em; }` +
+    `.err-sub   { font-size: ${subFont}px;   color: rgba(255,255,255,0.92); }` +
     `</style>` +
     `</head>` +
     `<body>` +
