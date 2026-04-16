@@ -24,6 +24,10 @@ const LAYOUTS = {
   "full":  { w: 1920, h: 1075 }, // full-screen layout
 };
 
+// Background color applied when ?bg=dark is set — used for testing against a
+// solid background to verify layout and error states without a display background.
+const DARK_BG_COLOR = '#111111';
+
 // ============================================================
 // IMAGE MAPPING
 // Maps short key names to source image URLs.
@@ -99,12 +103,16 @@ export default {
     const layoutKey = url.searchParams.get("layout") || "split";
     const layout    = LAYOUTS[layoutKey] || LAYOUTS["split"];
 
+    // Parse ?bg=dark — when present, apply a solid dark background to all rendered pages.
+    // This is used for testing; it does not affect production display behavior.
+    const darkBg = url.searchParams.get('bg') === 'dark';
+
     const imgParam = url.searchParams.get("img");
 
     // Require the img parameter — return a styled error page if missing
     if (!imgParam) {
       console.log(`[station-image-proxy] Request received with no img parameter`);
-      return generateErrorPage(layout.w, layout.h, "MISSING IMAGE KEY", "Check URL configuration", 400);
+      return generateErrorPage(layout.w, layout.h, "MISSING IMAGE KEY", "Check URL configuration", 400, darkBg);
     }
 
     // Parse and normalise the img parameter — replace spaces with +,
@@ -118,7 +126,7 @@ export default {
     if (isStacked) {
       if (keys.length > 2) {
         console.log(`[station-image-proxy] Stacking error: too many keys (${keys.length}) requested`);
-        return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400);
+        return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
       }
 
       const src1       = MAPPING[keys[0]];
@@ -135,7 +143,7 @@ export default {
         renderSlot(src2, layout.w, slotHeight) +
         `</div>`;
 
-      return buildResponse(body, layout);
+      return buildResponse(body, layout, darkBg);
     }
 
     // --------------------------------------------------------
@@ -144,12 +152,12 @@ export default {
     const src = MAPPING[keys[0]];
     if (!src) {
       console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
-      return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400);
+      return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
     }
 
     const body = renderSlot(src, layout.w, layout.h);
 
-    return buildResponse(body, layout);
+    return buildResponse(body, layout, darkBg);
   },
 };
 
@@ -227,7 +235,7 @@ function renderSlot(src, width, height) {
 // loaded as a full-screen iframe by the display system and that
 // header would cause an immediate white error screen.
 // ============================================================
-function buildResponse(body, layout) {
+function buildResponse(body, layout, darkBg = false) {
   const html =
     `<!DOCTYPE html>` +
     `<html>` +
@@ -236,7 +244,7 @@ function buildResponse(body, layout) {
     `<style>` +
     // Reset margins and make all backgrounds transparent so the display
     // hardware's built-in background shows through uncovered areas
-    `*,html,body{margin:0;padding:0;background:transparent;overflow:hidden;}` +
+    `*,html,body{margin:0;padding:0;background:${darkBg ? DARK_BG_COLOR : 'transparent'};overflow:hidden;}` +
     // Stack layout: flex column with the configured gap between the two slots
     `.stack{display:flex;flex-direction:column;gap:${STACK_GAP}px;` +
     `width:${layout.w}px;height:${layout.h}px;}` +
@@ -271,7 +279,7 @@ function buildResponse(body, layout) {
 // that a page reload cannot resolve. They require a correction
 // to the display system's configured URL.
 // ============================================================
-function generateErrorPage(width, height, title, subtitle, status) {
+function generateErrorPage(width, height, title, subtitle, status, darkBg = false) {
   const titleFont = Math.floor(Math.min(width, height) * 0.030);
   const subFont   = Math.floor(Math.min(width, height) * 0.020);
 
@@ -284,7 +292,7 @@ function generateErrorPage(width, height, title, subtitle, status) {
     `*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }` +
     `html, body {` +
     `  width: ${width}px; height: ${height}px;` +
-    `  overflow: hidden; background: transparent;` +
+    `  overflow: hidden; background: ${darkBg ? DARK_BG_COLOR : 'transparent'};` +
     `  font-family: "Segoe UI", Arial, Helvetica, sans-serif;` +
     `  display: flex; align-items: center; justify-content: center;` +
     `}` +
