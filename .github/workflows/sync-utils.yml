@@ -70,14 +70,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "=== Attempting to create PR ==="
-          echo "Base: staging"
-          echo "Head: sync-utils-v${{ steps.version.outputs.version }}"
-          gh auth status
           gh pr create \
             --base staging \
             --head sync-utils-v${{ steps.version.outputs.version }} \
             --title "chore: sync shared utils to v${{ steps.version.outputs.version }}" \
             --body "Automated sync from ffd-station-display-utils v${{ steps.version.outputs.version }}. Review the diff, test on staging, and merge when ready." \
             --repo wehnerb/station-image-proxy
-          echo "=== PR creation complete ==="
