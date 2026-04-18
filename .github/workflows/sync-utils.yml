@@ -42,6 +42,17 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Contents of workspace ==="
+          ls -la
+          echo "=== Contents of src/ (if exists) ==="
+          ls -la src/ 2>/dev/null || echo "src/ does not exist"
+          echo "=== Contents of src/shared/ (if exists) ==="
+          ls -la src/shared/ 2>/dev/null || echo "src/shared/ does not exist"
+          echo "=== git status ==="
+          git status --porcelain
+          echo "=== Setting output ==="
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
