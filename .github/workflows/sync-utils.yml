@@ -27,13 +27,13 @@ jobs:
 
     steps:
       - name: Checkout this repo at staging branch
-        uses: actions/checkout@v4
+        uses:  actions/checkout@v4.2.2
         with:
           ref: staging
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout ffd-station-display-utils at staging branch
-        uses: actions/checkout@v4
+        uses:  actions/checkout@v4.2.2
         with:
           repository: wehnerb/ffd-station-display-utils
           ref: staging
@@ -52,11 +52,15 @@ jobs:
           cp .utils-source/VERSION src/shared/VERSION
           rm -rf .utils-source
 
-      - name: Check for changes
+- name: Check for changes
         id: changes
         run: |
-          git diff --quiet && git diff --staged --quiet && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
-
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+          
       - name: No changes — exit cleanly
         if: steps.changes.outputs.changed == 'false'
         run: echo "src/shared is already up to date with utils v${{ steps.version.outputs.version }}. No PR needed."
