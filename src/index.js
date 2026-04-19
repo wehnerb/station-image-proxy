@@ -1,3 +1,6 @@
+import { DARK_BG_COLOR, FONT_STACK, ACCENT_COLOR } from './shared/colors.js';
+import { LAYOUTS } from './shared/layouts.js';
+
 /**
  * STATION IMAGE PROXY
  * Renders traffic camera and data images for fire station
@@ -12,21 +15,6 @@
 // ============================================================
 const STACK_GAP = 10;
 
-// ============================================================
-// LAYOUT DIMENSIONS
-// Pixel dimensions for each display column layout.
-// Do not change these values unless the display hardware changes.
-// ============================================================
-const LAYOUTS = {
-  "wide":  { w: 1735, h: 720  }, // 1-column full-width layout
-  "split": { w: 852,  h: 720  }, // 2-column layout (default)
-  "tri":   { w: 558,  h: 720  }, // 3-column layout
-  "full":  { w: 1920, h: 1075 }, // full-screen layout
-};
-
-// Background color applied when ?bg=dark is set — used for testing against a
-// solid background to verify layout and error states without a display background.
-const DARK_BG_COLOR = '#111111';
 
 // ============================================================
 // IMAGE MAPPING
@@ -112,7 +100,7 @@ export default {
     // Require the img parameter — return a styled error page if missing
     if (!imgParam) {
       console.log(`[station-image-proxy] Request received with no img parameter`);
-      return generateErrorPage(layout.w, layout.h, "MISSING IMAGE KEY", "Check URL configuration", 400, darkBg);
+      return generateErrorPage(layout.width, layout.height, "MISSING IMAGE KEY", "Check URL configuration", 400, darkBg);
     }
 
     // Parse and normalise the img parameter — replace spaces with +,
@@ -126,12 +114,12 @@ export default {
     if (isStacked) {
       if (keys.length > 2) {
         console.log(`[station-image-proxy] Stacking error: too many keys (${keys.length}) requested`);
-        return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
+        return generateErrorPage(layout.width, layout.height, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
       }
 
       const src1       = MAPPING[keys[0]];
       const src2       = MAPPING[keys[1]];
-      const slotHeight = Math.floor((layout.h - STACK_GAP) / 2);
+      const slotHeight = Math.floor((layout.height - STACK_GAP) / 2);
 
       // Log any unrecognised keys so they are visible in Worker logs
       if (!src1) console.log(`[station-image-proxy] Unknown image key: "${keys[0]}"`);
@@ -139,8 +127,8 @@ export default {
 
       const body =
         `<div class="stack">` +
-        renderSlot(src1, layout.w, slotHeight) +
-        renderSlot(src2, layout.w, slotHeight) +
+        renderSlot(src1, layout.width, slotHeight) +
+        renderSlot(src2, layout.width, slotHeight) +
         `</div>`;
 
       return buildResponse(body, layout, darkBg);
@@ -152,10 +140,10 @@ export default {
     const src = MAPPING[keys[0]];
     if (!src) {
       console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
-      return generateErrorPage(layout.w, layout.h, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
+      return generateErrorPage(layout.width, layout.height, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
     }
 
-    const body = renderSlot(src, layout.w, layout.h);
+    const body = renderSlot(src, layout.width, layout.height);
 
     return buildResponse(body, layout, darkBg);
   },
@@ -181,8 +169,8 @@ function renderSlot(src, width, height) {
     `width:100%;height:100%;` +
     `background:rgba(0,0,0,0.50);` +
     `display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Math.floor(subFont * 0.5)}px;`;
-  const titleCss = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-weight:700;font-size:${titleFont}px;color:#C8102E;letter-spacing:0.06em;`;
-  const subCss   = `font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-size:${subFont}px;color:rgba(255,255,255,0.92);`;
+  const titleCss = `font-family:${FONT_STACK};font-weight:700;font-size:${titleFont}px;color:${ACCENT_COLOR};letter-spacing:0.06em;`;
+  const subCss   = `font-family:${FONT_STACK};font-size:${subFont}px;color:rgba(255,255,255,0.92);`;
 
   if (!src) {
     // Key was not found in MAPPING — show a configuration error card in this slot.
@@ -247,7 +235,7 @@ function buildResponse(body, layout, darkBg = false) {
     `*,html,body{margin:0;padding:0;background:${darkBg ? DARK_BG_COLOR : 'transparent'};overflow:hidden;}` +
     // Stack layout: flex column with the configured gap between the two slots
     `.stack{display:flex;flex-direction:column;gap:${STACK_GAP}px;` +
-    `width:${layout.w}px;height:${layout.h}px;}` +
+    `width:${layout.width}px;height:${layout.height}px;}` +
     // Each slot uses explicit inline dimensions; img scales to fill via object-fit
     `.slot{position:relative;}` +
     `.slot img{width:100%;height:100%;object-fit:contain;display:block;}` +
@@ -293,11 +281,11 @@ function generateErrorPage(width, height, title, subtitle, status, darkBg = fals
     `html, body {` +
     `  width: ${width}px; height: ${height}px;` +
     `  overflow: hidden; background: ${darkBg ? DARK_BG_COLOR : 'transparent'};` +
-    `  font-family: "Segoe UI", Arial, Helvetica, sans-serif;` +
+    `  font-family: ${FONT_STACK};` +
     `  display: flex; align-items: center; justify-content: center;` +
     `}` +
     `.err-wrap { display: flex; flex-direction: column; align-items: center; gap: ${Math.floor(subFont * 0.6)}px; text-align: center; padding: 0 ${Math.floor(width * 0.06)}px; }` +
-    `.err-title { font-size: ${titleFont}px; font-weight: 700; color: #C8102E; letter-spacing: 0.06em; }` +
+    `.err-title { font-size: ${titleFont}px; font-weight: 700; color: ${ACCENT_COLOR}; letter-spacing: 0.06em; }` +
     `.err-sub   { font-size: ${subFont}px;   color: rgba(255,255,255,0.92); }` +
     `</style>` +
     `</head>` +
