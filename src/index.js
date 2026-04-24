@@ -87,6 +87,21 @@ export default {
 
     const url = new URL(request.url);
 
+    if (url.pathname === '/healthz') {
+      return new Response(
+        'OK\n' +
+        'worker: station-image-proxy\n' +
+        'status: healthy\n',
+        {
+          status: 200,
+          headers: {
+            'Content-Type':  'text/plain; charset=UTF-8',
+            'Cache-Control': 'no-store',
+          },
+        }
+      );
+    }
+
     // Resolve layout, falling back to the default if an invalid or missing value is passed
     const layoutKey = url.searchParams.get("layout") || "split";
     const layout    = LAYOUTS[layoutKey] || LAYOUTS["split"];
