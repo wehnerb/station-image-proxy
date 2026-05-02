@@ -79,19 +79,24 @@ const MAPPING = {
 export default {
   async fetch(request, env) {
 
-    // Only GET requests are valid for this Worker.
-    // All other HTTP methods are rejected immediately before any processing occurs.
-    if (request.method !== 'GET') {
-      return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'GET' } });
+    // Allow GET and HEAD (HEAD is used by UptimeRobot health monitoring).
+    // All other methods are rejected to reduce attack surface.
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method not allowed', {
+        status: 405,
+        headers: { 'Allow': 'GET, HEAD' },
+      });
     }
 
     const url = new URL(request.url);
 
     if (url.pathname === '/healthz') {
-      return new Response(
+      const healthBody =
         'OK\n' +
         'worker: station-image-proxy\n' +
-        'status: healthy\n',
+        'status: healthy\n';
+      return new Response(
+        request.method === 'HEAD' ? null : healthBody,
         {
           status: 200,
           headers: {
