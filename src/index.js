@@ -5,8 +5,10 @@ import { LAYOUTS } from './shared/layouts.js';
  * STATION IMAGE PROXY
  * Renders traffic camera and data images for fire station
  * display screens as HTML pages, scaled via CSS.
- * Images are fetched directly by the display browser —
- * no external image processing service is required.
+ * Images are fetched through the worker's /proxy endpoint
+ * to avoid Chrome Private Network Access (PNA) blocking
+ * that occurs when a public-origin page fetches images
+ * from upstream servers that resolve to private IP addresses.
  */
 
 // ============================================================
@@ -107,6 +109,73 @@ export default {
       );
     }
 
+    // --------------------------------------------------------
+    // STREAMING IMAGE PROXY ENDPOINT
+    // Fetches an upstream image by MAPPING key and streams it
+    // back to the browser so all fetches originate from this
+    // worker's origin, avoiding Chrome PNA blocking.
+    // --------------------------------------------------------
+    if (url.pathname === '/proxy') {
+      const key = url.searchParams.get('key');
+
+      if (!key) {
+        return new Response('Bad Request: missing key parameter', {
+          status: 400,
+          headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+        });
+      }
+
+      // SECURITY NOTE: Only keys present in MAPPING are accepted.
+      // Arbitrary URLs are never fetched, preventing this worker
+      // from being used as an open proxy.
+      const upstreamUrl = MAPPING[key];
+      if (!upstreamUrl) {
+        console.log(`[station-image-proxy] Proxy request for unknown key: "${key}"`);
+        return new Response('Not Found: unknown image key', {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+        });
+      }
+
+      let upstream;
+      try {
+        // Disable Cloudflare edge caching so the display always receives a fresh
+        // frame — upstream cameras update imagery on their own cadence and a
+        // cached copy would show a stale image until the TTL expired.
+        upstream = await fetch(upstreamUrl, {
+          cf: { cacheTtl: 0, cacheEverything: false },
+        });
+
+        if (!upstream.ok) {
+          console.log(`[station-image-proxy] Upstream returned ${upstream.status} for key: "${key}"`);
+          return new Response('Bad Gateway: upstream error', {
+            status: 502,
+            headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+          });
+        }
+      } catch (err) {
+        console.log(`[station-image-proxy] Upstream fetch failed for key: "${key}": ${err.message}`);
+        return new Response('Bad Gateway: upstream fetch failed', {
+          status: 502,
+          headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+        });
+      }
+
+      const contentType = upstream.headers.get('Content-Type') || 'image/jpeg';
+
+      // Stream the upstream body directly — no buffering, decoding, or processing.
+      // This keeps CPU usage well under the 10 ms Worker limit.
+      return new Response(request.method === 'HEAD' ? null : upstream.body, {
+        status: 200,
+        headers: {
+          'Content-Type':           contentType,
+          'Cache-Control':          'no-store',
+          'Pragma':                 'no-cache',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
+
     // Resolve layout, falling back to the default if an invalid or missing value is passed
     const layoutKey = url.searchParams.get("layout") || "split";
     const layout    = LAYOUTS[layoutKey] || LAYOUTS["split"];
@@ -137,18 +206,12 @@ export default {
         return generateErrorPage(layout.width, layout.height, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
       }
 
-      const src1       = MAPPING[keys[0]];
-      const src2       = MAPPING[keys[1]];
       const slotHeight = Math.floor((layout.height - STACK_GAP) / 2);
-
-      // Log any unrecognised keys so they are visible in Worker logs
-      if (!src1) console.log(`[station-image-proxy] Unknown image key: "${keys[0]}"`);
-      if (!src2) console.log(`[station-image-proxy] Unknown image key: "${keys[1]}"`);
 
       const body =
         `<div class="stack">` +
-        renderSlot(src1, layout.width, slotHeight) +
-        renderSlot(src2, layout.width, slotHeight) +
+        renderSlot(keys[0], layout.width, slotHeight) +
+        renderSlot(keys[1], layout.width, slotHeight) +
         `</div>`;
 
       return buildResponse(body, layout, darkBg);
@@ -157,13 +220,12 @@ export default {
     // --------------------------------------------------------
     // SINGLE IMAGE PATH
     // --------------------------------------------------------
-    const src = MAPPING[keys[0]];
-    if (!src) {
+    if (!MAPPING[keys[0]]) {
       console.log(`[station-image-proxy] Unknown image key requested: "${keys[0]}"`);
       return generateErrorPage(layout.width, layout.height, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
     }
 
-    const body = renderSlot(src, layout.width, layout.height);
+    const body = renderSlot(keys[0], layout.width, layout.height);
 
     return buildResponse(body, layout, darkBg);
   },
@@ -173,13 +235,16 @@ export default {
 // ============================================================
 // RENDER SLOT
 // Returns an HTML div for one image slot.
-// If src is falsy (key not found in MAPPING), renders a styled
-// error card in place of the image.
+// Accepts a MAPPING key name and builds a relative /proxy URL
+// so the browser fetches images through this worker rather than
+// directly from upstream — avoiding Chrome PNA blocking.
+// If the key is not found in MAPPING, renders a styled error
+// card in place of the image.
 // The img onerror handler hides the failed image element and
-// reveals the error card if the source URL fails to load.
+// reveals the error card if the proxy fetch fails.
 // Defined at module level so it is not re-created on every request.
 // ============================================================
-function renderSlot(src, width, height) {
+function renderSlot(key, width, height) {
   const titleFont = Math.floor(Math.min(width, height) * 0.044);
   const subFont   = Math.floor(Math.min(width, height) * 0.030);
 
@@ -192,8 +257,9 @@ function renderSlot(src, width, height) {
   const titleCss = `font-family:${FONT_STACK};font-weight:700;font-size:${titleFont}px;color:${ACCENT_COLOR};letter-spacing:0.06em;`;
   const subCss   = `font-family:${FONT_STACK};font-size:${subFont}px;color:rgba(255,255,255,0.92);`;
 
-  if (!src) {
-    // Key was not found in MAPPING — show a configuration error card in this slot.
+  if (!MAPPING[key]) {
+    // Key was not found in MAPPING — log and show a configuration error card in this slot.
+    console.log(`[station-image-proxy] Unknown image key: "${key}"`);
     return (
       `<div class="slot" style="width:${width}px;height:${height}px;">` +
       `<div style="${cardCss}">` +
@@ -204,13 +270,16 @@ function renderSlot(src, width, height) {
     );
   }
 
-  // SECURITY NOTE: src comes exclusively from the MAPPING constant above and
-  // is never derived from user-supplied input, so URL injection is not possible.
+  // Build a relative proxy URL so the browser fetches through this worker origin,
+  // regardless of whether the request comes from staging or production.
+  // SECURITY NOTE: key is validated against MAPPING above, so encodeURIComponent
+  // is used for correctness only — no untrusted data reaches the proxy endpoint.
+  const proxySrc = `/proxy?key=${encodeURIComponent(key)}`;
 
   return (
     `<div class="slot" style="width:${width}px;height:${height}px;">` +
     // On load failure, hide the broken img element and show the error card beneath it.
-    `<img src="${src}" alt="" referrerpolicy="no-referrer" ` +
+    `<img src="${proxySrc}" alt="" referrerpolicy="no-referrer" ` +
     `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` +
     `<div style="${cardCss}display:none;">` +
     `<span style="${titleCss}">IMAGE UNAVAILABLE</span>` +
@@ -227,13 +296,13 @@ function renderSlot(src, width, height) {
 // and returns it as a Response with appropriate headers.
 //
 // Image refresh is handled entirely by the display hardware —
-// the browser re-requests source images directly from their
-// origin servers on its own rendering cycle. No meta refresh
-// tag is included.
+// the browser re-requests source images through the /proxy
+// endpoint on its own rendering cycle. No meta refresh tag
+// is included.
 //
 // Cache-Control: no-store prevents the browser from serving a
-// cached copy of the page, ensuring source images are always
-// re-requested from their origin servers.
+// cached copy of the page, ensuring proxy images are always
+// re-requested on each refresh cycle.
 //
 // Backgrounds are set to transparent throughout so the display
 // hardware's built-in background shows through any areas not
