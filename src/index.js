@@ -34,7 +34,8 @@ const MAPPING = {
 
   // ND DOT Cameras — I-94
   "i94VeteransBlvd-south":   "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBSouth.jpg",
-  "i94VeteransBlvd-east":    "https://www.dot.nd.gov/travel-info/cameras/I94RP347.565Fargo9thStEEBEast.jpg",
+  "i94VeteransBlvd-east":    "https://www.dot.nd.gov/travel-info/cameras/I94@347.601Fargo9thStEWBEast.jpg",
+  //  "i94VeteransBlvd-east":    "https://www.dot.nd.gov/travel-info/cameras/I94RP347.565Fargo9thStEEBEast.jpg", // Original image. Using the link above until the DOT camera on the south side of I-94/Vets gets fixed and back online
   "i9445thStS-south":        "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStSouth.jpg",
   "i9445thStS-east":         "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStEast.jpg",
   "i9445thStS-west":         "https://www.dot.nd.gov/travel-info/cameras/I94RP348.602Fargo45thStWest.jpg",
