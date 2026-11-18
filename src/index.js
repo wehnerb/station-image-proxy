@@ -11,11 +11,18 @@ import { LAYOUTS } from './shared/layouts.js';
  * from upstream servers that resolve to private IP addresses.
  */
 
-// ============================================================
 // CONFIGURATION
-// STACK_GAP : Pixel gap between vertically stacked images
+// STACK_GAP          : Pixel gap between vertically stacked images
+// PAGE_CACHE_SECONDS : How long a display's browser may reuse a page
+//                      without asking this Worker again. The page is
+//                      static HTML for a given URL. The camera images it
+//                      points to are NOT cached: /proxy always responds
+//                      no-store, so the images are re-requested every
+//                      time the page is shown. A code change reaches the
+//                      displays only after this time has passed.
 // ============================================================
 const STACK_GAP = 10;
+const PAGE_CACHE_SECONDS = 3600;
 
 
 // ============================================================
@@ -212,9 +219,13 @@ export default {
         `<div class="stack">` +
         renderSlot(keys[0], layout.width, slotHeight) +
         renderSlot(keys[1], layout.width, slotHeight) +
-        `</div>`;
+               `</div>`;
 
-      return buildResponse(body, layout, darkBg);
+      // Cache the page only when both keys are valid, so a page showing an
+      // "INVALID IMAGE KEY" card is never kept by the browser.
+      const bothKeysValid = Boolean(MAPPING[keys[0]] && MAPPING[keys[1]]);
+
+      return buildResponse(body, layout, darkBg, bothKeysValid);
     }
 
     // --------------------------------------------------------
@@ -225,9 +236,10 @@ export default {
       return generateErrorPage(layout.width, layout.height, "INVALID IMAGE KEY", "Check URL configuration", 400, darkBg);
     }
 
-    const body = renderSlot(keys[0], layout.width, layout.height);
+        const body = renderSlot(keys[0], layout.width, layout.height);
 
-    return buildResponse(body, layout, darkBg);
+    // The key was validated above, so this page is safe to cache.
+    return buildResponse(body, layout, darkBg, true);
   },
 };
 
@@ -300,9 +312,12 @@ function renderSlot(key, width, height) {
 // endpoint on its own rendering cycle. No meta refresh tag
 // is included.
 //
-// Cache-Control: no-store prevents the browser from serving a
-// cached copy of the page, ensuring proxy images are always
-// re-requested on each refresh cycle.
+// Cache-Control: when cacheable is true (every image key valid) the
+// browser may keep the page privately for PAGE_CACHE_SECONDS. The page
+// is static for a given URL, and the camera images are fetched through
+// /proxy, which is always no-store, so the images are still re-requested
+// every time the page is shown. Pages containing an error card are never
+// cacheable.
 //
 // Backgrounds are set to transparent throughout so the display
 // hardware's built-in background shows through any areas not
@@ -312,7 +327,7 @@ function renderSlot(key, width, height) {
 // loaded as a full-screen iframe by the display system and that
 // header would cause an immediate white error screen.
 // ============================================================
-function buildResponse(body, layout, darkBg = false) {
+function buildResponse(body, layout, darkBg = false, cacheable = false) {
   const html =
     `<!DOCTYPE html>` +
     `<html>` +
@@ -333,10 +348,10 @@ function buildResponse(body, layout, darkBg = false) {
     `<body>${body}</body>` +
     `</html>`;
 
-  return new Response(html, {
+    return new Response(html, {
     headers: {
       "Content-Type":           "text/html;charset=UTF-8",
-      "Cache-Control":          "no-store",
+      "Cache-Control":          cacheable ? "private, max-age=" + PAGE_CACHE_SECONDS : "no-store",
       "X-Content-Type-Options": "nosniff",
     },
   });
